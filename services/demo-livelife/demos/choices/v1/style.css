@@ -1,0 +1,157 @@
+/* V1 Liquid Glass: live light field behind two refractive glass cards. Web approximation of Apple's Liquid Glass. */
+body {
+  min-height: 100dvh;
+  background: #050b1f;
+  color: #f2f6ff;
+  overflow-x: hidden;
+}
+
+.field, .field-fallback {
+  position: fixed; inset: 0; width: 100%; height: 100%;
+  z-index: 0; pointer-events: none;
+}
+.field-fallback {
+  display: none;
+  background:
+    radial-gradient(60% 50% at 75% 30%, rgb(59 123 255 / 0.55), transparent 70%),
+    radial-gradient(50% 45% at 20% 80%, rgb(29 78 216 / 0.5), transparent 70%),
+    radial-gradient(40% 35% at 55% 60%, rgb(120 180 255 / 0.25), transparent 70%),
+    #050b1f;
+}
+.no-gl .field { display: none; }
+.no-gl .field-fallback { display: block; }
+
+.top {
+  position: relative; z-index: 2;
+  display: flex; align-items: center;
+  padding: 28px clamp(20px, 5vw, 64px) 0;
+}
+.brand { display: inline-flex; align-items: center; gap: 12px; font-weight: 600; font-size: 15px; letter-spacing: 0.01em; }
+.brand img { border-radius: 50%; box-shadow: 0 0 0 1px rgb(255 255 255 / 0.15); }
+
+.stage {
+  position: relative; z-index: 1;
+  min-height: calc(100dvh - 64px);
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  align-items: center;
+  gap: clamp(32px, 5vw, 80px);
+  padding: 24px clamp(20px, 5vw, 64px) 56px;
+  max-width: 1440px; margin: 0 auto;
+}
+
+.tag {
+  display: inline-flex; align-items: center; gap: 10px;
+  margin: 0 0 28px; padding: 8px 14px; border-radius: 999px;
+  font-size: 13px; font-weight: 500; color: #cfe0ff;
+  background: rgb(255 255 255 / 0.06);
+  border: 1px solid rgb(255 255 255 / 0.12);
+}
+.tag-sep { width: 4px; height: 4px; border-radius: 50%; background: #7fa8ff; }
+
+.hello {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(44px, 6.2vw, 92px);
+  line-height: 0.98;
+  letter-spacing: -0.035em;
+}
+.ask {
+  margin: 22px 0 0; max-width: 28ch;
+  font-size: clamp(18px, 1.6vw, 22px); line-height: 1.45;
+  color: rgb(226 236 255 / 0.78);
+}
+
+.cards {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: clamp(16px, 2vw, 28px);
+}
+
+/* The glass. Two elements only (perf budget). */
+.card {
+  --mx: 50%; --my: 0%;
+  position: relative; isolation: isolate; overflow: hidden;
+  display: flex; flex-direction: column;
+  min-height: clamp(360px, 52vh, 520px);
+  padding: clamp(24px, 2.4vw, 36px);
+  border-radius: 32px;
+  background: linear-gradient(160deg, rgb(255 255 255 / 0.16), rgb(255 255 255 / 0.04) 55%, rgb(255 255 255 / 0.08));
+  border: 1px solid rgb(255 255 255 / 0.22);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.45),
+    inset 0 -1px 0 rgb(255 255 255 / 0.08),
+    0 30px 80px -20px rgb(2 6 23 / 0.65);
+  backdrop-filter: blur(22px) saturate(170%);
+  -webkit-backdrop-filter: blur(22px) saturate(170%);
+  transition: transform 260ms var(--ease-out), border-color 200ms ease, box-shadow 260ms var(--ease-out);
+  cursor: pointer;
+}
+.refract .card {
+  backdrop-filter: url(#lens) saturate(170%) brightness(1.08);
+}
+/* Specular highlight that follows the pointer. */
+.card-sheen {
+  position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background:
+    radial-gradient(420px circle at var(--mx) var(--my), rgb(255 255 255 / 0.22), transparent 45%),
+    linear-gradient(90deg, rgb(255 255 255 / 0.10), transparent 30%, transparent 70%, rgb(255 255 255 / 0.06));
+  opacity: 0.7;
+  transition: opacity 260ms ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  .card:hover { transform: translateY(-6px); border-color: rgb(255 255 255 / 0.38); }
+  .card:hover .card-sheen { opacity: 1; }
+  .card:hover .card-cta i { transform: translateX(4px); }
+}
+.card:active { transform: scale(0.98); transition-duration: 120ms; }
+
+.card-icon {
+  display: grid; place-items: center;
+  width: 60px; height: 60px; border-radius: 18px;
+  background: rgb(255 255 255 / 0.12);
+  border: 1px solid rgb(255 255 255 / 0.2);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.35);
+}
+.card-icon svg { width: 30px; height: 30px; }
+
+.card-copy { margin-top: auto; display: block; }
+.card-title {
+  display: block;
+  font-family: var(--font-display); font-weight: 700;
+  font-size: clamp(26px, 2.3vw, 34px); line-height: 1.05; letter-spacing: -0.02em;
+}
+.card-body {
+  display: block; margin-top: 12px; max-width: 30ch;
+  font-size: 16px; line-height: 1.5; color: rgb(230 238 255 / 0.78);
+}
+.card-cta {
+  display: inline-flex; align-items: center; gap: 10px; align-self: flex-start;
+  margin-top: 28px; padding: 13px 20px; border-radius: 999px;
+  font-weight: 600; font-size: 15px; color: #06102a;
+  background: #f3f7ff;
+  box-shadow: 0 8px 24px -8px rgb(59 123 255 / 0.6);
+}
+.card-cta i { display: inline-grid; transition: transform 200ms var(--ease-out); }
+.card-cta svg { width: 18px; height: 18px; }
+.card[data-go="class"] .card-cta { background: #2563eb; color: #fff; } /* 5.2:1 with white text */
+
+.veil {
+  position: fixed; inset: 0; z-index: 50; pointer-events: none;
+  background: #050b1f; opacity: 0;
+}
+
+/* Hidden until the intro runs (only when JS + motion are on). */
+.js-motion .tag, .js-motion .ask, .js-motion .card, .js-motion .brand { opacity: 0; }
+
+@media (max-width: 900px) {
+  .stage { grid-template-columns: 1fr; align-items: start; gap: 32px; padding-top: 32px; }
+  .cards { grid-template-columns: 1fr; }
+  .card { min-height: 240px; border-radius: 26px; }
+  .card-copy { margin-top: 28px; }
+}
+
+/* Windows "Transparency effects: off" maps to this. Keep the glass, make the tint denser for legibility. */
+@media (prefers-reduced-transparency: reduce) {
+  .card { background: linear-gradient(160deg, rgb(40 70 150 / 0.55), rgb(14 28 70 / 0.62)); }
+}

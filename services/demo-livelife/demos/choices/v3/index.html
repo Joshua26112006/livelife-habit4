@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>AI Decoder Academy | Teacher</title>
+  <meta name="theme-color" content="#f2f6ff">
+  <link rel="icon" href="shared/favicon.png">
+  <link rel="preload" href="vendor/fonts/syne-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="shared/base.css">
+  <link rel="stylesheet" href="v3/style.css">
+</head>
+<body data-version="v3">
+  <div class="sky" aria-hidden="true"><i class="b1"></i><i class="b2"></i><i class="b3"></i></div>
+
+  <header class="top">
+    <a class="brand" href="./" aria-label="AI Decoder Academy home">
+      <img src="shared/aida-logo.webp" alt="" width="34" height="34">
+      <span data-aida="brand">AI Decoder Academy</span>
+    </a>
+    <p class="tag"><span data-aida="level">Level 5</span>, <span data-aida="habit">Habit 4: Think Win-Win</span></p>
+  </header>
+
+  <main class="stage">
+    <div class="head">
+      <h1 class="hello"><span data-aida="greeting">Welcome, teacher</span>.</h1>
+      <p class="ask" data-aida="question">Where would you like to begin?</p>
+    </div>
+
+    <div class="venn" aria-label="Choose where to begin">
+      <a class="circle c-self" data-go="self">
+        <span class="ring" aria-hidden="true"></span>
+        <span class="inner">
+          <i class="ic" data-icon="user-focus-light"></i>
+          <span class="t" data-aida="choices.0.title">Self assessment</span>
+          <span class="b" data-aida="choices.0.body"></span>
+          <span class="cta"><span data-aida="choices.0.cta">Start assessment</span><i data-icon="arrow-right"></i></span>
+        </span>
+      </a>
+      <a class="circle c-class" data-go="class">
+        <span class="ring" aria-hidden="true"></span>
+        <span class="inner">
+          <i class="ic" data-icon="presentation-chart-light"></i>
+          <span class="t" data-aida="choices.1.title">Classroom content</span>
+          <span class="b" data-aida="choices.1.body"></span>
+          <span class="cta"><span data-aida="choices.1.cta">Open content</span><i data-icon="arrow-right"></i></span>
+        </span>
+      </a>
+      <span class="overlap" aria-hidden="true">
+        <i data-icon="handshake-light"></i>
+        <span>Think<br>Win-Win</span>
+      </span>
+    </div>
+  </main>
+
+  <script src="shared/config.js"></script>
+  <script src="shared/icons.js"></script>
+  <script src="vendor/gsap.min.js"></script>
+  <script src="vendor/SplitText.min.js"></script>
+  <script src="shared/choices.js"></script>
+  <script src="v3/app.js"></script>
+</body>
+</html>

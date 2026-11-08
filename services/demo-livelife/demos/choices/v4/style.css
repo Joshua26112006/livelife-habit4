@@ -1,0 +1,99 @@
+/* V4 Spatial: a visionOS-like floating glass window that tilts with the pointer. Light theme. */
+body { min-height: 100dvh; background: #dfe8ff; color: #0b1a3a; overflow-x: hidden; }
+
+.env { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none;
+  background: linear-gradient(180deg, #c9dbff 0%, #e6edff 52%, #f4f1ff 100%); }
+.env i { position: absolute; border-radius: 50%; filter: blur(80px); will-change: transform; }
+.env .s1 { width: 50vw; height: 50vw; left: -8vw; top: -12vw; background: rgb(59 123 255 / 0.55); animation: sway 20s var(--ease-in-out) infinite alternate; }
+.env .s2 { width: 44vw; height: 44vw; right: -10vw; top: 6vh; background: rgb(125 211 252 / 0.6); animation: sway 24s var(--ease-in-out) -7s infinite alternate-reverse; }
+.env .s3 { width: 34vw; height: 34vw; left: 34vw; bottom: -14vw; background: rgb(196 181 253 / 0.55); animation: sway 18s var(--ease-in-out) -3s infinite alternate; }
+.env .floor { left: -10%; right: -10%; bottom: -30vh; height: 60vh; border-radius: 50%; background: rgb(255 255 255 / 0.65); filter: blur(60px); }
+@keyframes sway { to { transform: translate3d(4vw, 3vh, 0) scale(1.06); } }
+
+.space {
+  position: relative; z-index: 1; min-height: 100dvh;
+  display: grid; place-items: center; align-content: center; gap: 22px;
+  padding: 32px 16px; perspective: 1400px;
+}
+.window-wrap { display: grid; justify-items: center; gap: 14px; width: min(1080px, 100%); transform-style: preserve-3d; will-change: transform; }
+
+.window {
+  width: 100%; padding: clamp(24px, 3.4vw, 48px); border-radius: 44px;
+  background: linear-gradient(150deg, rgb(255 255 255 / 0.55), rgb(255 255 255 / 0.26));
+  border: 1px solid rgb(255 255 255 / 0.85);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.95),
+    inset 0 0 0 1px rgb(255 255 255 / 0.2),
+    0 50px 100px -40px rgb(29 55 140 / 0.45),
+    0 20px 40px -24px rgb(29 55 140 / 0.3);
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  transform-style: preserve-3d;
+}
+.w-head { display: flex; align-items: flex-start; gap: 18px; }
+.w-head img { border-radius: 50%; box-shadow: 0 8px 20px -6px rgb(29 78 216 / 0.6); flex: none; }
+.w-brand { margin: 4px 0 12px; font-size: 16px; font-weight: 700; color: #0b1a3a; letter-spacing: 0.005em; }
+.hello { margin: 0; font: 700 clamp(36px, 4.6vw, 64px)/1 var(--font-display); letter-spacing: -0.035em; }
+.ask { margin: 12px 0 0; font-size: clamp(17px, 1.5vw, 20px); color: #44527a; }
+
+.tiles { margin-top: clamp(24px, 4vh, 44px); display: grid; grid-template-columns: 1.15fr 1fr; gap: 18px; transform-style: preserve-3d; }
+.tile {
+  --mx: 50%; --my: 50%;
+  position: relative; overflow: hidden; isolation: isolate;
+  display: flex; flex-direction: column; min-height: 250px; padding: 24px; border-radius: 30px;
+  background: rgb(255 255 255 / 0.62);
+  border: 1px solid rgb(255 255 255 / 0.95);
+  box-shadow: inset 0 1px 0 #fff, 0 18px 40px -26px rgb(29 55 140 / 0.5);
+  transition: transform 400ms var(--ease-out), box-shadow 400ms var(--ease-out), background 300ms ease;
+  cursor: pointer;
+}
+.tile:nth-child(2) { background: linear-gradient(150deg, #2a64f0, #1d4ed8 60%, #1638a8); color: #fff; border-color: rgb(255 255 255 / 0.35); }
+/* Pointer spotlight (after React Bits SpotlightCard, reimplemented). */
+.spot { position: absolute; inset: 0; z-index: -1; pointer-events: none; opacity: 0; transition: opacity 300ms ease;
+  background: radial-gradient(300px circle at var(--mx) var(--my), rgb(59 123 255 / 0.16), transparent 60%); }
+.tile:nth-child(2) .spot { background: radial-gradient(300px circle at var(--mx) var(--my), rgb(255 255 255 / 0.22), transparent 60%); }
+
+.tile-top { display: flex; justify-content: space-between; align-items: center; }
+.tile-ic { display: grid; place-items: center; width: 56px; height: 56px; border-radius: 18px; background: #1d4ed8; color: #fff; }
+.tile:nth-child(2) .tile-ic { background: #fff; color: #1d4ed8; }
+.tile-ic svg { width: 28px; height: 28px; }
+.go { display: grid; place-items: center; width: 48px; height: 48px; border-radius: 50%; background: #0b1a3a; color: #fff; will-change: transform; }
+.tile:nth-child(2) .go { background: #fff; color: #0b1a3a; }
+.go i { display: inline-grid; }
+.go svg { width: 20px; height: 20px; }
+.tile-title { margin-top: auto; padding-top: 28px; font: 700 clamp(24px, 2.3vw, 32px)/1.05 var(--font-display); letter-spacing: -0.02em; }
+.tile-body { margin-top: 10px; font-size: 15px; line-height: 1.5; opacity: 0.78; max-width: 36ch; }
+
+@media (hover: hover) and (pointer: fine) {
+  .tile:hover { transform: translateZ(40px) translateY(-4px); box-shadow: inset 0 1px 0 #fff, 0 40px 70px -30px rgb(29 55 140 / 0.6); }
+  .tile:hover .spot { opacity: 1; }
+}
+.tile:active { transform: translateZ(10px) scale(0.985); }
+
+.grab { width: 120px; height: 6px; border-radius: 99px; background: rgb(255 255 255 / 0.9); box-shadow: 0 2px 8px rgb(29 55 140 / 0.2); }
+
+.ornament {
+  margin: 0; display: inline-flex; align-items: center; gap: 10px; padding: 10px 18px; border-radius: 999px;
+  font-size: 14px; font-weight: 500; color: #24345c;
+  background: rgb(255 255 255 / 0.45); border: 1px solid rgb(255 255 255 / 0.85);
+  box-shadow: inset 0 1px 0 #fff, 0 12px 30px -16px rgb(29 55 140 / 0.45);
+  backdrop-filter: blur(16px) saturate(170%); -webkit-backdrop-filter: blur(16px) saturate(170%);
+}
+.ornament i { display: inline-grid; color: #1d4ed8; }
+.ornament svg { width: 20px; height: 20px; }
+.ornament .sep { width: 4px; height: 4px; border-radius: 50%; background: #7f93c4; }
+
+.js-motion .window, .js-motion .grab, .js-motion .ornament { opacity: 0; }
+
+@media (max-width: 760px) {
+  .tiles { grid-template-columns: 1fr; }
+  .tile { min-height: 200px; }
+  .w-head { flex-direction: column; gap: 14px; }
+  .window { border-radius: 34px; }
+  .ornament { font-size: 13px; }
+}
+@media (prefers-reduced-motion: reduce) { .env i { animation: none; } }
+@media (prefers-reduced-transparency: reduce) {
+  .window { background: linear-gradient(150deg, rgb(255 255 255 / 0.82), rgb(240 245 255 / 0.7)); }
+  .ornament { background: rgb(255 255 255 / 0.85); }
+}

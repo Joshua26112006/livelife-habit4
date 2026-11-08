@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>AI Decoder Academy | Teacher</title>
+  <meta name="theme-color" content="#050b1f">
+  <link rel="icon" href="shared/favicon.png">
+  <link rel="preload" href="vendor/fonts/syne-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="shared/base.css">
+  <link rel="stylesheet" href="v1/style.css">
+</head>
+<body data-version="v1">
+  <canvas class="field" aria-hidden="true"></canvas>
+  <div class="field-fallback" aria-hidden="true"></div>
+
+  <header class="top">
+    <a class="brand" href="./" aria-label="AI Decoder Academy home">
+      <img src="shared/aida-logo.webp" alt="" width="36" height="36">
+      <span data-aida="brand">AI Decoder Academy</span>
+    </a>
+  </header>
+
+  <main class="stage">
+    <section class="intro">
+      <p class="tag"><span data-aida="level">Level 5</span><span class="tag-sep" aria-hidden="true"></span><span data-aida="habit">Habit 4: Think Win-Win</span></p>
+      <h1 class="hello"><span data-aida="greeting">Welcome, teacher</span>.</h1>
+      <p class="ask" data-aida="question">Where would you like to begin?</p>
+    </section>
+
+    <section class="cards" aria-label="Choose where to begin">
+      <a class="card" data-go="self">
+        <span class="card-sheen" aria-hidden="true"></span>
+        <i class="card-icon" data-icon="user-focus-light"></i>
+        <span class="card-copy">
+          <span class="card-title" data-aida="choices.0.title">Self assessment</span>
+          <span class="card-body" data-aida="choices.0.body"></span>
+        </span>
+        <span class="card-cta"><span data-aida="choices.0.cta">Start assessment</span><i data-icon="arrow-right"></i></span>
+      </a>
+      <a class="card" data-go="class">
+        <span class="card-sheen" aria-hidden="true"></span>
+        <i class="card-icon" data-icon="presentation-chart-light"></i>
+        <span class="card-copy">
+          <span class="card-title" data-aida="choices.1.title">Classroom content</span>
+          <span class="card-body" data-aida="choices.1.body"></span>
+        </span>
+        <span class="card-cta"><span data-aida="choices.1.cta">Open content</span><i data-icon="arrow-right"></i></span>
+      </a>
+    </section>
+  </main>
+
+  <div class="veil" aria-hidden="true"></div>
+
+  <!-- Edge refraction for the glass cards (Chromium only; other browsers keep the frosted blur). -->
+  <svg class="sr-only" aria-hidden="true">
+    <filter id="lens" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
+      <feImage id="lens-map" result="map" preserveAspectRatio="none"/>
+      <feDisplacementMap in="SourceGraphic" in2="map" scale="42" xChannelSelector="R" yChannelSelector="G" result="bent"/>
+      <feGaussianBlur in="bent" stdDeviation="9"/>
+    </filter>
+  </svg>
+
+  <script src="shared/config.js"></script>
+  <script src="shared/icons.js"></script>
+  <script src="vendor/gsap.min.js"></script>
+  <script src="vendor/SplitText.min.js"></script>
+  <script src="shared/choices.js"></script>
+  <script src="v1/app.js"></script>
+</body>
+</html>

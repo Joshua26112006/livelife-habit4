@@ -1,0 +1,172 @@
+{
+  "think_cards": [
+    {
+      "title": "Playing with Friends",
+      "scenario": "You want to ride bikes, but your friend prefers to play video games.",
+      "question": "How can you combine both activities for fun?",
+      "image_concept": "A group of kids smiling as they ride their bikes together, with one child holding a portable video game console, suggesting they take turns biking and playing games under a tree.",
+      "image": "generated/images/think_cards_0.webp"
+    },
+    {
+      "title": "Choosing a Snack",
+      "scenario": "You want cookies, but your sibling wants fruit.",
+      "question": "What snack could satisfy both of you?",
+      "image_concept": "Two siblings sitting at a table with a plate of cookies and a bowl of fresh fruit, happily sharing the cookies while making fruit sandwiches together, creating a fun snack for both.",
+      "image": "generated/images/think_cards_1.webp"
+    },
+    {
+      "title": "Saturday Activities",
+      "scenario": "Your team wants to practice basketball while you want to go swimming.",
+      "question": "What could be a win-win plan for both your team and you?",
+      "image_concept": "A diverse group of kids at a park, one group practicing basketball on one side while another group sets up a small pool nearby, all laughing together as they plan to switch activities after a set time.",
+      "image": "generated/images/think_cards_2.webp"
+    },
+    {
+      "title": "Studying Together",
+      "scenario": "You want to study for a test, but your friend wants to watch a movie.",
+      "question": "How can you balance studying and having fun together?",
+      "image_concept": "Two friends sitting on a couch surrounded by study materials and popcorn, one writing notes while the other holds a remote, taking breaks to watch short clips from a movie they both enjoy.",
+      "image": "generated/images/think_cards_3.webp"
+    }
+  ],
+  "blog": {
+    "title": "Understanding Win-Win Thinking",
+    "sections": [
+      {
+        "heading": "What is Win-Win?",
+        "body": "Win-win thinking means finding solutions that are good for everyone involved. Instead of just one person winning, both can feel happy.",
+        "image_concept": "What is Win-Win?. Win-win thinking means finding solutions that are good for everyone involved. Instead of just one person winning, both can feel happy.",
+        "image": "generated/images/blog_0.webp"
+      },
+      {
+        "heading": "The Importance of Listening",
+        "body": "To create a win-win, listen to what others want. This shows you care about their feelings and needs.",
+        "image_concept": "The Importance of Listening. To create a win-win, listen to what others want. This shows you care about their feelings and needs.",
+        "image": "generated/images/blog_1.webp"
+      },
+      {
+        "heading": "Keeping Promises",
+        "body": "Trust is key in relationships. When you keep your promises, you build trust like adding to an emotional bank account.",
+        "image_concept": "Keeping Promises. Trust is key in relationships. When you keep your promises, you build trust like adding to an emotional bank account.",
+        "image": "generated/images/blog_2.webp"
+      },
+      {
+        "heading": "Making Agreements",
+        "body": "A win-win agreement helps partners understand how to work together. Clear steps make it easier for everyone to win.",
+        "image_concept": "Making Agreements. A win-win agreement helps partners understand how to work together. Clear steps make it easier for everyone to win.",
+        "image": "generated/images/blog_3.webp"
+      }
+    ]
+  },
+  "quiz": [
+    {
+      "question": "What does win-win thinking mean?",
+      "options": [
+        "One person wins all",
+        "Everyone wins",
+        "No one wins",
+        "It's a tie"
+      ],
+      "answer_index": 1,
+      "why": "Win-win thinking is about finding solutions where both sides are satisfied."
+    },
+    {
+      "question": "Why is listening important in win-win solutions?",
+      "options": [
+        "It's not important",
+        "It helps understand others",
+        "It makes you the leader",
+        "It confuses everyone"
+      ],
+      "answer_index": 1,
+      "why": "Listening shows that you care about the other person's needs."
+    },
+    {
+      "question": "What builds trust in relationships?",
+      "options": [
+        "Breaking promises",
+        "Keeping promises",
+        "Avoiding conflicts",
+        "Ignoring others"
+      ],
+      "answer_index": 1,
+      "why": "When you keep your promises, you are making deposits in your emotional bank account."
+    },
+    {
+      "question": "What can lead to less fighting in relationships?",
+      "options": [
+        "Keeping everything to yourself",
+        "Making win-win agreements",
+        "Always winning",
+        "Ignoring others' feelings"
+      ],
+      "answer_index": 1,
+      "why": "Win-win agreements help everyone understand each other and create harmony."
+    },
+    {
+      "question": "What can be a consequence of not keeping promises?",
+      "options": [
+        "Building trust",
+        "Losing trust",
+        "Making friends",
+        "Winning arguments"
+      ],
+      "answer_index": 1,
+      "why": "Failure to keep promises creates withdrawals in the emotional bank account, leading to less trust."
+    }
+  ],
+  "flashcards": [
+    {
+      "front": "Win-Win Thinking",
+      "back": "A solution where both sides benefit.",
+      "image_concept": "Win-Win Thinking: A solution where both sides benefit.",
+      "image": "generated/images/flashcards_0.webp"
+    },
+    {
+      "front": "Emotional Bank Account",
+      "back": "A metaphor for trust in relationships.",
+      "image_concept": "Emotional Bank Account: A metaphor for trust in relationships.",
+      "image": "generated/images/flashcards_1.webp"
+    },
+    {
+      "front": "Keeping Promises",
+      "back": "Building trust by following through on commitments.",
+      "image_concept": "Keeping Promises: Building trust by following through on commitments.",
+      "image": "generated/images/flashcards_2.webp"
+    },
+    {
+      "front": "Active Listening",
+      "back": "Hearing what others say to understand their needs.",
+      "image_concept": "Active Listening: Hearing what others say to understand their needs.",
+      "image": "generated/images/flashcards_3.webp"
+    },
+    {
+      "front": "Win-Win Agreement",
+      "back": "A plan made by two parties to benefit both.",
+      "image_concept": "Win-Win Agreement: A plan made by two parties to benefit both.",
+      "image": "generated/images/flashcards_4.webp"
+    },
+    {
+      "front": "Conflict Resolution",
+      "back": "Finding a peaceful solution to disagreements.",
+      "image_concept": "Conflict Resolution: Finding a peaceful solution to disagreements.",
+      "image": "generated/images/flashcards_5.webp"
+    },
+    {
+      "front": "Consideration",
+      "back": "Thinking about others' feelings and needs.",
+      "image_concept": "Consideration: Thinking about others' feelings and needs.",
+      "image": "generated/images/flashcards_6.webp"
+    },
+    {
+      "front": "Accountability",
+      "back": "Being responsible for keeping promises or agreements.",
+      "image_concept": "Accountability: Being responsible for keeping promises or agreements.",
+      "image": "generated/images/flashcards_7.webp"
+    }
+  ],
+  "_meta": {
+    "habit": "Habit 4: Think Win-Win",
+    "source": "source/habit4.md"
+  }
+}
