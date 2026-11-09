@@ -64,7 +64,8 @@ class ChapterPack:
             "chapter_id": self.chapter_id, "version": self.version, "subject": self.subject, "upload_hint": self.upload_hint,
             "competencies": self.competencies,
             "misconceptions": {c: {k: e[k] for k in ("name", "belief", "kind", "competency_ids")} for c, e in self.misconceptions.items()},
-            "questions": [{"id": i["id"], "text": i["text"], "competency_ids": i["competency_ids"]} for i in self.items],
+            "questions": [{"id": i["id"], "text": i["text"], "competency_ids": i["competency_ids"], "level": i.get("level"), "icon": i.get("icon"),
+                           "answer": str(i.get("correct") or i.get("key") or "Reasoned answer")} for i in self.items],
             "interventions": {"total": len(statuses), "approved": statuses.count("approved")},
         }
 

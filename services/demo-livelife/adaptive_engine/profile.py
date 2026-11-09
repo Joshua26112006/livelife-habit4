@@ -18,6 +18,8 @@ def classify(pack, trace):
         return "no_evidence"
     if trace["result"] == "correct":
         return "correct_with_working" if trace.get("shows_working") else "correct_no_working"
+    if trace["result"] == "correct_wrong_reason":
+        return "incorrect"
     if trace["result"].startswith("correct"):
         return "correct_no_working"
     if UNMAPPED in beliefs:

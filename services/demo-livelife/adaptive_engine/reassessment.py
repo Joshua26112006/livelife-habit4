@@ -6,6 +6,7 @@ descriptive: a change in score is evidence to look at, not proof that an interve
 from .pack import NO_EVIDENCE_RESULTS
 
 OPEN_STATUSES = ("confirmed", "likely", "candidate")
+SOUND_RESULTS = ("correct", "correct_reason_unclear")
 
 
 def build_paper(pack, attempt=1):
@@ -16,7 +17,7 @@ def _score(traces, question_ids):
     judged = [t for t in traces if t["q"] in question_ids and t["result"] not in NO_EVIDENCE_RESULTS]
     if not judged:
         return None
-    return round(100 * sum(t["result"].startswith("correct") for t in judged) / len(judged))
+    return round(100 * sum(t["result"] in SOUND_RESULTS for t in judged) / len(judged))
 
 
 def _open_beliefs(diagnosis):

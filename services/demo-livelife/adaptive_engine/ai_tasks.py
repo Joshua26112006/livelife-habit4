@@ -82,6 +82,29 @@ def apply_marking(pack, sheets, items, results):
     return updated, failed
 
 
+# ---- Module 3: what the class's answers mean, question by question
+def insight_tasks(pack, questions):
+    tasks = []
+    for question in questions:
+        ways = "\n".join(f'{w["id"]} | {w["count"]} students | {w["label"]} | {w["error_name"] or "no error"} | wrote: """{w["sample"]}"""' for w in question["ways"] if w["level"] != "blank")
+        tasks.append(_task(pack, question["id"], 'For each way of answering, write one short plain sentence on the thinking behind it, as a teacher would say it. Then write a callout of two sentences at most: '
+                                                 'what a mark of right or wrong would hide on this question. Use only the counts given. Reply as {"ways": {"<id>": "sentence"}, "callout": "..."}.',
+                           f'Question: {question["text"]}\nAnswer: {question["answer"]}\nWays of answering:\n{ways}', 700))
+    return tasks
+
+
+def apply_insights(questions, results):
+    insights = {}
+    for question in questions:
+        reply = results.get(question["id"])
+        if not isinstance(reply, dict):
+            continue
+        replies = reply.get("ways") if isinstance(reply.get("ways"), dict) else {}
+        known = {w["id"] for w in question["ways"]}
+        insights[question["id"]] = {"ways": {k: safe_text(v, 240) for k, v in replies.items() if k in known and safe_text(v, 240)}, "callout": safe_text(reply.get("callout"), 400)}
+    return insights
+
+
 # ---- Module 4
 def intervention_tasks(pack, cycle):
     needs = {}
@@ -135,6 +158,7 @@ def material_tasks(pack, plan):
     tasks = []
     for group_id, card in plan["cards"].items():
         tasks.append(_task(pack, group_id, "Draft teaching material strictly within this approved intervention. Add no new concepts and keep to the steps given. "
+                                     "Every worksheet question must state all the numbers and facts needed to answer it, with nothing left open or ambiguous. "
                                      'Reply as {"teacher_script": ["short lines"], "worksheet": ["short student tasks"], "exit_ticket": "one question"}.',
                            f'Intervention: {card["title"]}\nSteps: {" ".join(card["steps"])}\nTeacher guidance: {" ".join(card["teacher_guidance"])}\n'
                            f'Student task: {" ".join(card["student_task"])}\nMinutes: {card["duration_minutes"][1]}', 900))

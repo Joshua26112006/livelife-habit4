@@ -25,7 +25,21 @@ function aiEnabled(): boolean {
   return process.env.DEMO_LIVELIFE_SCORE === "1" && Boolean(process.env.OPENROUTER_API_KEY || process.env.OPENAI_API_KEY);
 }
 
+const ATTEMPTS = 3;
+
+/** A dropped connection or a provider hiccup should not cost a whole module its AI step. */
 async function chat(system: string, user: string, maxTokens: number): Promise<Record<string, unknown>> {
+  for (let attempt = 1; ; attempt += 1) {
+    try {
+      return await chatOnce(system, user, maxTokens);
+    } catch (err) {
+      if (attempt >= ATTEMPTS) throw err;
+      await new Promise(done => setTimeout(done, 800 * attempt));
+    }
+  }
+}
+
+async function chatOnce(system: string, user: string, maxTokens: number): Promise<Record<string, unknown>> {
   const res = await fetch(API_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${process.env.OPENROUTER_API_KEY || process.env.OPENAI_API_KEY}` },

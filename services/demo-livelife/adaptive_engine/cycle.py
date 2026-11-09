@@ -3,6 +3,7 @@
 Stages keep explicit contracts; this class only sequences them and records every recommendation and human decision.
 """
 from datetime import datetime, timezone
+from fractions import Fraction
 
 from . import clustering, identification, interventions, orchestration, reassessment
 from .profile import LearnerProfile
@@ -33,9 +34,19 @@ class ClassCycle:
         diagnoses = list(self.diagnoses.values())
         self.mappings = [interventions.map_student(self.pack, d, self.allow_draft, self.preferred) for d in diagnoses]
         self.groups = clustering.build_groups(self.pack, self.mappings, self.max_group_size)
+        self._set_delivery()
         self._set_cohorts()
         self.plan = None
         self._log("groups_proposed", groups=[g["group_id"] for g in self.groups])
+
+    def _set_delivery(self):
+        """Who owns the fix decides who delivers it: the teacher only teaches what the teacher owns."""
+        size = len(self.diagnoses)
+        for group in self.groups:
+            code = group["misconception_id"]
+            showing = sum(code in d["summary"] for d in self.diagnoses.values())
+            group["owners"] = clustering.owners_for(self.pack, code, Fraction(showing, size))
+            group["delivery"] = "teacher" if "teacher" in group["owners"] else "practice_card"
 
     def _set_cohorts(self):
         grouped = {s for g in self.groups for s in g["student_ids"]}
@@ -102,7 +113,9 @@ class ClassCycle:
 
     def build_plan(self, period_minutes=orchestration.DEFAULT_PERIOD_MINUTES):
         evidence = {g["group_id"]: self._evidence_item_for(g) for g in self.groups}
-        self.plan = orchestration.plan_sessions(self.pack, self.groups, evidence, period_minutes, self.cohorts)
+        taught = [g for g in self.groups if g["delivery"] == "teacher"]
+        cards = [g for g in self.groups if g["delivery"] != "teacher"]
+        self.plan = orchestration.plan_sessions(self.pack, taught, evidence, period_minutes, self.cohorts, cards)
         self._log("plan_recommended", periods=len(self.plan["periods"]))
         return self.plan
 

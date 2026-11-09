@@ -1,11 +1,13 @@
 """CBSE Class 10 Probability: the first chapter pack and the worked example of the ChapterPack contract."""
+from dataclasses import replace
+
 from ...pack import ChapterPack
 from .catalogue import CATALOGUE, PROBES, SEPARATING_PROBES, TEACHING_ORDER, needs_expert_draft
 from .knowledge_base import COMPETENCIES, INTERVENTION_MAP, INTERVENTIONS, MISCONCEPTION_COMPETENCIES, VERSION
 from .parallel import parallel_item
 from .reader import read_answer
-from .samples import sample
-from .templates import TEST
+from .samples import sample, short_sample
+from .templates import SHORT_TEST, TEST
 
 PACK = ChapterPack(
     chapter_id="cbse-10-maths-probability",
@@ -28,4 +30,13 @@ PACK = ChapterPack(
     extension_task="NCERT reasoning items: Exercise 14.1 Q22 and Q25. Explain each answer in writing.",
 )
 
-__all__ = ["PACK", "needs_expert_draft"]
+SHORT_PACK = replace(
+    PACK,
+    chapter_id="cbse-10-maths-probability-short",
+    items=SHORT_TEST,
+    sample=short_sample,
+    subject={**PACK.subject, "chapter": "Probability, 3-question check"},
+    upload_hint="Q1 to Q3: the student's full working as written, for example: 4 kings out of 52 cards, P = 4/52 = 1/13.",
+)
+
+__all__ = ["PACK", "SHORT_PACK", "needs_expert_draft"]

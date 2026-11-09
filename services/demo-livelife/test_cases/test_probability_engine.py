@@ -51,7 +51,7 @@ def test_p03_order_confirmed_and_settles_the_two_explanations(students):
     p03 = students["P03"]
     assert p03["summary"]["MC-O"]["questions"] == ["T3", "T4", "T5"]
     assert p03["next"]["target"] == "MC-O"
-    assert p03["two_explanations"]["T3"] == {"beliefs": ["MC-O", "MC-L"], "settled_by": "MC-O", "probe": None}
+    assert "MC-L" not in p03["summary"]  # a written list with a reversed pair missing is order, not categories
 
 
 def test_p04_routes_to_earliest_belief_and_keeps_the_other(students):
@@ -162,7 +162,7 @@ def test_fix_owner_thresholds(code, share, owners):
 def test_class_view_on_the_sample():
     view = analyse_sheets(SHEETS)["class"]
     rows = {row["code"]: row for row in view["misconceptions"]}
-    assert rows["MC-L"]["students"] == ["P02", "P03", "P06"]
+    assert rows["MC-L"]["students"] == ["P02", "P06"]
     assert rows["MC-L"]["owners"] == ["content", "teacher", "student"]
     assert set(rows["SLIP-F"]["remedies"]) == {"student"}
     assert rows["MC-U"]["owners"] == ["teacher", "student"]  # 1 of 6 is 16.7%

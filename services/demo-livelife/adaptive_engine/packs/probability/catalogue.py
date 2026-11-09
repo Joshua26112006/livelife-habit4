@@ -75,12 +75,12 @@ CATALOGUE = {
     },
     "DECK": {
         "name": "Doesn't know the deck",
-        "belief": "Missing fact about a pack of cards ('1 king -> 1/52').",
+        "belief": "Thinks there is one king. A fact gap, not a probability error: the method was right.",
         "kind": "fact",
-        "student": None,
-        "teacher": None,
-        "content": None,
-        "exit_check": None,
+        "student": "Learn the deck: 4 suits of 13 cards; 4 of each rank; 12 face cards.",
+        "teacher": "Two-minute deck recap with a real pack before any card question.",
+        "content": "Add a deck reference card to the start of the card questions.",
+        "exit_check": "How many queens are in a deck of 52? Find P(queen). (4/52)",
     },
     "SLIP-E": {
         "name": "Listing slip",

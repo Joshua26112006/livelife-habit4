@@ -27,6 +27,8 @@ def weigh(pack, traces):
         highs = sum(confidence == "high" for _, confidence in items)
         if code in pack.slips:
             status = "slip"
+        elif pack.misconceptions.get(code, {}).get("kind") == "fact":
+            status = "gap"
         elif code == UNMAPPED:
             status = "unmapped"
         elif len(items) >= 2 and highs:
@@ -67,15 +69,15 @@ def _route(pack, summary, teacher):
     unsure = _with_status(pack, summary, "likely", "candidate")
     if unsure:
         return {"action": "probe", "target": unsure[0], "probe": pack.probes.get(unsure[0])}
-    slips = [code for code in pack.slips if code in summary]
-    if slips:
-        return {"action": "practice", "target": slips}
+    practice = [code for code, entry in pack.misconceptions.items() if entry["kind"] in ("slip", "fact") and code in summary]
+    if practice:
+        return {"action": "practice", "target": practice}
     return {"action": "teacher_review"} if teacher else {"action": "extension"}
 
 
 def _hypotheses(pack, student_id, summary, traces):
     """MisconceptionHypothesis records: evidence-linked, with confidence and the follow-up action."""
-    follow_up = {"confirmed": "intervene", "likely": "probe", "candidate": "probe", "slip": "practice"}
+    follow_up = {"confirmed": "intervene", "likely": "probe", "candidate": "probe", "slip": "practice", "gap": "practice"}
     records = []
     for code, entry in summary.items():
         if code == UNMAPPED or entry["status"] == "ruled_out":

@@ -11,13 +11,13 @@ import threading
 from datetime import datetime, timezone
 from pathlib import Path
 
-from . import ai_tasks, bulk
+from . import ai_tasks, bulk, insights
 from .cycle import ClassCycle
 from .packs import all_packs
 
 STAGES = ("created", "uploaded", "identified", "mapped", "grouped", "planned", "approved", "paper_ready", "v2_uploaded", "scored", "profiled")
 # module: (stage it needs, stage it leads to)
-MODULES = {"m3": ("uploaded", "identified"), "m4": ("identified", "mapped"), "m5": ("mapped", "grouped"), "m6": ("grouped", "planned"),
+MODULES = {"m3": ("uploaded", "identified"), "m3-insight": ("identified", "identified"), "m4": ("identified", "mapped"), "m5": ("mapped", "grouped"), "m6": ("grouped", "planned"),
            "m7-paper": ("approved", "paper_ready"), "m7-score": ("v2_uploaded", "scored"), "m8": ("scored", "profiled")}
 _LOCK = threading.Lock()
 
@@ -40,7 +40,7 @@ class Workflow:
         self.stage, self.seq = "created", 0
         self.v1_sheets, self.v2_sheets = [], []
         self.upload_reports, self.ai, self.rationale = {}, {}, {}
-        self.materials, self.group_reasons, self.paper_flags, self.narrative = {}, {}, {}, {}
+        self.materials, self.group_reasons, self.paper_flags, self.narrative, self.insights = {}, {}, {}, {}, {}
 
     # ---- applying events (no side effects, so replay is safe)
     def _apply(self, kind, payload, at):
@@ -69,6 +69,10 @@ class Workflow:
         sheets, self.ai["m3_failed"] = ai_tasks.apply_marking(self.pack, self.v1_sheets, self.pack.items, self._results(p))
         self.cycle.run_diagnostic(sheets)
         self.stage = "identified"
+
+    def _on_m3_insight(self, p):
+        self.ai["m3-insight"] = p.get("status", "off")
+        self.insights = ai_tasks.apply_insights(insights.question_view(self.pack, self.cycle.diagnoses), self._results(p))
 
     def _on_probe(self, p):
         self.cycle.record_probe(p["student"], p["code"], p["outcome"], p["teacher"])
@@ -148,6 +152,8 @@ class Workflow:
         self._need(MODULES[module][0])
         if module == "m3":
             return ai_tasks.marking_tasks(self.pack, self.v1_sheets, self.pack.items)
+        if module == "m3-insight":
+            return ai_tasks.insight_tasks(self.pack, insights.question_view(self.pack, self.cycle.diagnoses))
         if module == "m4":
             return ai_tasks.intervention_tasks(self.pack, self.cycle)
         if module == "m5":
@@ -172,10 +178,31 @@ class Workflow:
 
     def _feed_m3(self):
         cycle = self.cycle
-        return {"ai": self.ai.get("m3"), "ai_failed_students": self.ai.get("m3_failed", 0), "class": cycle.class_view(), "students": [
-            {k: d[k] for k in ("student", "summary", "next", "teacher", "hypotheses", "two_explanations")} |
-            {"answers": [{k: t.get(k) for k in ("q", "result", "working", "steps", "findings")} for t in d["traces"]]}
-            for d in cycle.diagnoses.values()]}
+        questions = insights.question_view(self.pack, cycle.diagnoses)
+        for question in questions:
+            found = self.insights.get(question["id"], {})
+            question["callout"] = found.get("callout", "")
+            for way in question["ways"]:
+                way["think"] = found.get("ways", {}).get(way["id"], way["think"])
+        class_view = cycle.class_view()
+        for row in class_view["misconceptions"]:
+            row["examples"] = insights.examples(questions, row["code"])
+            row["why"] = self.pack.misconceptions[row["code"]]["belief"]
+        return {"ai": self.ai.get("m3"), "ai_insight": self.ai.get("m3-insight"), "ai_failed_students": self.ai.get("m3_failed", 0), "class": class_view,
+                "overview": insights.overview(self.pack, cycle.diagnoses, questions), "questions": questions,
+                "students": [{k: d[k] for k in ("student", "summary", "next", "teacher", "hypotheses", "two_explanations")} | {"answers": self._answers(d)}
+                             for d in cycle.diagnoses.values()]}
+
+    def _answers(self, diagnosis):
+        rows = []
+        for trace in diagnosis["traces"]:
+            level, code = insights.answer_level(self.pack, trace)
+            rows.append({"q": trace["q"], "result": trace["result"], "working": trace["working"], "findings": trace["findings"], "level": level, "error": code,
+                         "label": self.pack.misconceptions[code]["name"] if code else insights.LEVEL_LABELS[level]})
+        return rows
+
+    def _feed_m3_insight(self):
+        return self._feed_m3()
 
     def _feed_m4(self):
         rows = [{"student": m["student"], "primary": m["primary"], "secondary": m["secondary"]} for m in self.cycle.mappings]
@@ -195,7 +222,8 @@ class Workflow:
                 "paper": [{"id": i["id"], "text": i["text"], "answer": str(i.get("correct", "Reasoned answer")), "parallel_of": i["parallel_of"]} for i in self.cycle.paper]}
 
     def _feed_m7_score(self):
-        return {"ai": self.ai.get("m7-score"), "ai_failed_students": self.ai.get("m7_failed", 0), "comparison": self.cycle.comparison}
+        return {"ai": self.ai.get("m7-score"), "ai_failed_students": self.ai.get("m7_failed", 0), "comparison": self.cycle.comparison,
+                "answers": {s: self._answers(d) for s, d in self.cycle.retests.items()}}
 
     def _feed_m8(self):
         views = {s: p.view() for s, p in self.cycle.profiles.items()}
@@ -205,7 +233,7 @@ class Workflow:
 
     def status(self):
         reached = STAGES.index(self.stage)
-        feeds = {m: self.feed(m) for m, (_, done) in MODULES.items() if reached >= STAGES.index(done)}
+        feeds = {m: self.feed(m) for m, (_, done) in MODULES.items() if m != "m3-insight" and reached >= STAGES.index(done)}
         return {"class_id": self.class_id, "name": self.name, "pack": self.pack_key, "subject_map": self.pack.describe(), "stage": self.stage, "uploads": self.upload_reports, "feeds": feeds,
                 "v2_columns": self.question_ids("v2") if reached >= STAGES.index("paper_ready") else None}
 

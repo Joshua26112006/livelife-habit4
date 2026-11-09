@@ -1,64 +1,102 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Adaptive Teaching Engine</title>
+<title>How We Find and Fix Misconceptions</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&family=Sora:wght@600;700&family=Caveat:wght@500;600&display=swap" rel="stylesheet">
 <style>
-  :root { color-scheme: light dark; --ink: #1c2333; --muted: #5d6679; --line: #d9dee8; --bg: #f5f6fa; --card: #fff; --accent: #3f46d6; --on-accent: #fff; --soft: #eceefb; --good: #17694a; --warn: #8a5a00; --bad: #a32929; }
-  @media (prefers-color-scheme: dark) { :root { --ink: #e8ebf2; --muted: #a4adbf; --line: #343c4d; --bg: #12151d; --card: #1c212c; --accent: #a4a9ff; --on-accent: #12151d; --soft: #2a2f4a; --good: #6fd3a8; --warn: #f0c060; --bad: #ff9c9c; } }
-  * { box-sizing: border-box; }
-  body { margin: 0; padding: 24px 16px 64px; background: var(--bg); color: var(--ink); font: 15px/1.5 system-ui, sans-serif; }
-  main { max-width: 1040px; margin: 0 auto; }
-  h1 { margin: 0; font-size: 26px; } h2 { margin: 0; font-size: 18px; } h3 { margin: 16px 0 6px; font-size: 14px; }
-  p { margin: 4px 0; } .muted { color: var(--muted); } .small { font-size: 13px; }
-  .steps { display: flex; flex-wrap: wrap; gap: 6px; margin: 14px 0 20px; padding: 0; list-style: none; }
-  .steps li { padding: 4px 10px; border-radius: 999px; font-size: 12.5px; background: var(--card); border: 1px solid var(--line); color: var(--muted); }
-  .steps li.done { color: var(--good); } .steps li.now { background: var(--accent); color: var(--on-accent); border-color: var(--accent); font-weight: 600; }
-  section { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 18px; margin-bottom: 14px; }
-  section.locked { opacity: .55; }
-  .head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
-  .row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 10px; }
-  button, .btn { font: inherit; padding: 7px 14px; border-radius: 8px; border: 1px solid var(--accent); background: var(--accent); color: var(--on-accent); cursor: pointer; text-decoration: none; display: inline-block; }
-  button.ghost, .btn.ghost { background: transparent; color: var(--accent); }
-  button.tiny { padding: 2px 8px; font-size: 12.5px; }
-  button:disabled { opacity: .45; cursor: not-allowed; }
-  input[type=text], select { font: inherit; padding: 6px 9px; border-radius: 8px; border: 1px solid var(--line); background: var(--card); color: var(--ink); }
-  .scroll { overflow-x: auto; margin-top: 8px; border: 1px solid var(--line); border-radius: 8px; }
-  table { width: 100%; border-collapse: collapse; }
-  th, td { padding: 8px 10px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; font-size: 14px; }
-  tr:last-child td { border-bottom: 0; } th { font-size: 12px; color: var(--muted); font-weight: 600; }
-  code { color: var(--accent); font: 600 12.5px ui-monospace, monospace; }
-  .chip { font-size: 12px; padding: 2px 9px; border-radius: 999px; background: var(--soft); white-space: nowrap; }
-  .chip.ok { color: var(--good); } .chip.warn { color: var(--warn); } .chip.bad { color: var(--bad); }
-  details { margin-top: 6px; } summary { cursor: pointer; color: var(--accent); font-size: 13.5px; }
-  ul.tight { margin: 4px 0; padding-left: 18px; }
-  #busy { position: sticky; top: 8px; z-index: 5; display: none; padding: 9px 14px; border-radius: 8px; background: var(--accent); color: var(--on-accent); margin-bottom: 12px; }
-  #error { display: none; padding: 9px 14px; border-radius: 8px; border: 1px solid var(--bad); color: var(--bad); margin-bottom: 12px; }
+:root {
+  --bg: #f2f4f7; --surface: #ffffff; --ink: #141c28; --muted: #5a6575; --line: #dbe1e9; --accent: #1d5c88; --accent-soft: #e1ecf5;
+  --secure: #1f7a4d; --shown: #86c4a0; --slip: #e3b23c; --wrong: #c8503a; --wrong-soft: #f9e3dd; --teach: #7d8ca3; --blank: #bcc3cd;
+  --content: #1d5c88; --teacher: #7a4fb0; --student: #b4610e; --paper: #fffdf5; --paper-line: #ebe5d1; --pencil: #22314a;
+  --font-display: "Sora", "Segoe UI", system-ui, sans-serif; --font-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace; --font-hand: "Caveat", "Segoe Print", cursive;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0f151d; --surface: #17202b; --ink: #e7ecf3; --muted: #9ca8b8; --line: #2a3546; --accent: #74b4df; --accent-soft: #1c3245;
+  --secure: #4cbf83; --shown: #3e7d5a; --slip: #cfa035; --wrong: #e6765d; --wrong-soft: #3a2420; --teach: #6f7f96; --blank: #4a5465;
+  --content: #74b4df; --teacher: #b698ec; --student: #f0a75a; --paper: #1f2733; --paper-line: #343e4e; --pencil: #e0e7f1; color-scheme: dark; } }
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 70px; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } * { transition: none !important; } }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 16px; line-height: 1.5; }
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; margin: 0; }
+h1 { font-size: clamp(26px, 4vw, 38px); line-height: 1.15; } h2 { font-size: clamp(22px, 3vw, 30px); line-height: 1.2; } h3 { font-size: 17px; }
+p { margin: 0; } .muted { color: var(--muted); } .small { font-size: 13px; } .num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.hand { font-family: var(--font-hand); font-size: 24px; line-height: 1.15; color: var(--pencil); overflow-wrap: anywhere; }
+nav.bar { position: sticky; top: 0; z-index: 5; background: color-mix(in srgb, var(--bg) 90%, transparent); backdrop-filter: blur(6px); border-bottom: 1px solid var(--line); }
+nav .in { max-width: 1120px; margin: 0 auto; padding: 10px 18px; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+nav a { font-size: 13px; font-weight: 500; color: var(--muted); text-decoration: none; padding: 5px 10px; border-radius: 999px; }
+nav a.on { background: var(--accent); color: #fff; } nav .sp { flex: 1; }
+a:focus-visible, button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button, .btn { font: inherit; font-size: 14px; font-weight: 500; cursor: pointer; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); padding: 6px 14px; text-decoration: none; display: inline-block; }
+button.pri { background: var(--accent); color: #fff; border-color: var(--accent); } button.tiny { padding: 2px 9px; font-size: 13px; } button:disabled { opacity: .5; cursor: not-allowed; }
+select, input[type=text] { font: inherit; font-size: 14px; padding: 6px 9px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); max-width: 100%; }
+main { max-width: 1120px; margin: 0 auto; padding: 0 18px 60px; }
+section.ch { padding: 40px 0 28px; border-bottom: 1px solid var(--line); display: grid; gap: 22px; } section.ch:last-of-type { border-bottom: 0; }
+.chead { display: grid; gap: 8px; max-width: 760px; } .step { font-family: var(--font-mono); font-size: 13px; color: var(--accent); letter-spacing: .04em; } .say { font-size: 18px; color: var(--muted); }
+.hero { padding: 36px 0 30px; display: grid; gap: 18px; border-bottom: 1px solid var(--line); }
+.tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; } @media (max-width: 760px) { .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.tile { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; display: grid; gap: 2px; } .tile b { font-family: var(--font-display); font-size: 32px; line-height: 1.1; }
+.loop { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; } .loop .s { background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 6px 12px; font-size: 14px; font-weight: 500; color: var(--muted); }
+.loop .s.done { color: var(--secure); border-color: var(--secure); } .loop .s.now { background: var(--accent); border-color: var(--accent); color: #fff; } .loop .a { color: var(--muted); }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; display: grid; gap: 12px; align-content: start; min-width: 0; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.qs { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+.badge { justify-self: start; font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; padding: 3px 9px; border-radius: 6px; background: var(--accent-soft); color: var(--accent); }
+.badge.easy { background: color-mix(in srgb, var(--secure) 18%, transparent); color: var(--secure); } .badge.hard { background: var(--wrong-soft); color: var(--wrong); }
+.panel svg { height: 88px; width: auto; }
+.tabs { display: flex; gap: 8px; flex-wrap: wrap; } .tabs button[aria-selected="true"] { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.qview { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 22px; align-items: start; } @media (max-width: 860px) { .qview { grid-template-columns: 1fr; } }
+.waffle { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; } .waffle i { aspect-ratio: 1; border-radius: 50%; display: block; transition: opacity .15s; } .waffle i.dim { opacity: .2; }
+.big { font-family: var(--font-display); font-size: 40px; line-height: 1; } .legend { display: grid; gap: 6px; font-size: 13px; } .legend span { display: flex; gap: 8px; align-items: center; } .sw { width: 13px; height: 13px; border-radius: 50%; display: inline-block; flex: none; }
+.sheets { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+.sheet { background: var(--paper); border: 1px solid var(--paper-line); border-radius: 10px; padding: 10px 14px 12px; display: grid; gap: 6px; border-top: 5px solid var(--c, var(--line)); align-content: start; }
+.sheet .top { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; color: var(--muted); } .sheet .think { font-size: 14px; background: var(--surface); border-radius: 6px; padding: 6px 8px; border: 1px solid var(--line); }
+.sheet:hover, .sheet:focus-within { box-shadow: 0 0 0 2px var(--c); }
+.callout { border-left: 4px solid var(--accent); background: var(--accent-soft); border-radius: 0 10px 10px 0; padding: 10px 14px; font-size: 15px; }
+.note { border-left: 4px solid var(--slip); background: color-mix(in srgb, var(--slip) 14%, transparent); border-radius: 0 10px 10px 0; padding: 10px 14px; font-size: 14px; }
+.mgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 14px; } .pct { display: flex; align-items: baseline; gap: 8px; } .pct b { font-family: var(--font-display); font-size: 34px; color: var(--wrong); line-height: 1; } .gap .pct b { color: var(--slip); }
+.bar { height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; } .bar div { height: 100%; background: var(--wrong); } .gap .bar div { background: var(--slip); } .ex { font-size: 14px; border-left: 3px solid var(--wrong); padding-left: 8px; } .gap .ex { border-color: var(--slip); }
+.rule { display: flex; flex-wrap: wrap; gap: 8px; font-size: 14px; align-items: center; } .rule .r { padding: 5px 10px; border-radius: 999px; color: #fff; font-weight: 500; }
+.owners { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; } @media (max-width: 860px) { .owners { grid-template-columns: 1fr; } }
+.own { border-top: 6px solid var(--oc); } .own h3 { color: var(--oc); display: flex; justify-content: space-between; gap: 8px; } .act { display: grid; gap: 4px; padding-top: 10px; border-top: 1px solid var(--line); font-size: 14px; } .tag { font-size: 12px; font-weight: 600; color: var(--muted); } .gaps { color: var(--muted); font-style: italic; }
+.scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); } table { width: 100%; border-collapse: collapse; } th, td { padding: 8px 10px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; font-size: 14px; } tr:last-child td { border-bottom: 0; } th { font-size: 12px; color: var(--muted); font-weight: 600; }
+details summary { cursor: pointer; color: var(--accent); font-size: 14px; } details { margin: 2px 0; } ul.t, ol.t { margin: 6px 0; padding-left: 20px; font-size: 14px; }
+.ba { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; } @media (max-width: 960px) { .ba { grid-template-columns: 1fr; } }
+.vrow { display: grid; grid-template-columns: 58px minmax(0, 1fr); gap: 8px; align-items: start; font-size: 14px; } .chip { border-radius: 8px; padding: 3px 9px; font-size: 13px; font-weight: 600; color: #fff; display: inline-block; } .chip.t { background: transparent; color: var(--secure); border: 2px dashed var(--secure); }
+.draft { font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 6px; background: color-mix(in srgb, var(--slip) 22%, transparent); color: var(--ink); white-space: nowrap; }
+.cmp { display: grid; grid-template-columns: minmax(0, 1fr) 150px; gap: 10px; align-items: center; font-size: 14px; } .two { display: grid; gap: 3px; } .two div { height: 9px; border-radius: 4px; } .two .a { background: var(--wrong); } .two .b { background: var(--secure); }
+#busy { position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%); z-index: 9; display: none; padding: 10px 18px; border-radius: 999px; background: var(--ink); color: var(--surface); font-size: 14px; }
+#error { display: none; max-width: 1084px; margin: 12px auto 0; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--wrong); color: var(--wrong); background: var(--wrong-soft); }
+footer { max-width: 1120px; margin: 0 auto; padding: 0 18px 40px; font-size: 13px; color: var(--muted); }
 </style>
 </head>
 <body>
-<main>
-  <h1>Adaptive Teaching Engine</h1>
-  <p class="muted" id="title">Upload a class's answers, analyse each student, teach, re-test, compare.</p>
-  <nav><ul class="steps" id="steps"></ul></nav>
-  <div id="busy" role="status"></div>
-  <div id="error" role="alert"></div>
-  <div id="app"></div>
-</main>
+<nav class="bar" aria-label="Chapters"><div class="in" id="nav"></div></nav>
+<div id="error" role="alert"></div>
+<div id="busy" role="status"></div>
+<main id="app"></main>
+<footer id="foot"></footer>
 <script>
 const API = "api";
 const ORDER = ["created","uploaded","identified","mapped","grouped","planned","approved","paper_ready","v2_uploaded","scored","profiled"];
-const NAV = [["Upload","uploaded"],["3 Identify","identified"],["4 Interventions","mapped"],["5 Groups","grouped"],["6 Plan","planned"],["Approve","approved"],["7 V2 paper","paper_ready"],["V2 upload","v2_uploaded"],["7 Compare","scored"],["8 Profiles","profiled"]];
-let C = null, SUBJECTS = {};
+const COLORS = { secure: "--secure", shown: "--shown", slip: "--slip", wrong: "--wrong", teacher: "--teach", blank: "--blank" };
+const LABELS = { secure: "Correct, method shown", shown: "Correct, no working", slip: "Slip or missing fact", wrong: "Thinking error", teacher: "For the teacher", blank: "Left blank" };
+const OWNER = { content: ["Our content", "--content"], teacher: ["Teacher", "--teacher"], student: ["Student", "--student"] };
+let C = null, SUBJECTS = {}, tab = 0, who = "";
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
-const words = s => esc(String(s ?? "").replace(/[_-]/g, " "));
-const code = s => `<code>${esc(s)}</code>`;
-const reached = stage => C && ORDER.indexOf(C.stage) >= ORDER.indexOf(stage);
-const table = (cols, rows) => `<div class="scroll"><table><thead><tr>${cols.map(c => `<th scope="col">${c}</th>`).join("")}</tr></thead><tbody>${rows.map(r => `<tr>${r.map(c => `<td>${c}</td>`).join("")}</tr>`).join("") || `<tr><td colspan="${cols.length}" class="muted">Nothing here.</td></tr>`}</tbody></table></div>`;
-const AI = { ok: ["ok","AI applied"], partial: ["warn","AI partly applied"], failed: ["bad","AI failed: rules only"], off: ["warn","AI off: rules only"] };
-const chip = s => s ? `<span class="chip ${AI[s]?.[0] ?? ""}">${AI[s]?.[1] ?? esc(s)}</span>` : "";
+const nl = s => esc(s).replace(/\n/g, "<br>");
+const color = l => `var(${COLORS[l] || "--line"})`;
+const plural = (n, w) => `${n} ${w}${n === 1 ? "" : "s"}`;
+const reached = s => C && ORDER.indexOf(C.stage) >= ORDER.indexOf(s);
+const table = (cols, rows) => `<div class="scroll"><table><thead><tr>${cols.map(c => `<th scope="col">${c}</th>`).join("")}</tr></thead><tbody>${rows.map(r => `<tr>${r.map(c => `<td>${c}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
+const subjectLine = m => `${m.subject.subject}, ${m.subject.grade}: ${m.subject.chapter}`;
+const nameOf = c => C.subject_map.misconceptions[c]?.name || c;
 
 async function call(path, options) {
   const res = await fetch(path, options);
@@ -66,159 +104,183 @@ async function call(path, options) {
   if (!res.ok) throw new Error(body.error || "That step failed. Is the service running?");
   return body;
 }
+const json = body => ({ method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+const post = (path, body) => call(`${API}/classes/${C.class_id}/${path}`, json(body));
+const module_ = route => call(`/api/adaptive/${route}`, json({ classId: C.class_id }));
+function showError(message) { $("error").textContent = message; $("error").style.display = "block"; }
 async function step(message, fn) {
   $("error").style.display = "none"; $("busy").textContent = message; $("busy").style.display = "block";
   document.querySelectorAll("button").forEach(b => b.disabled = true);
-  try { await fn(); await refresh(); }
-  catch (e) { $("error").textContent = e.message; $("error").style.display = "block"; render(); }
-  finally { $("busy").style.display = "none"; }
+  try { await fn(); await refresh(); } catch (e) { showError(e.message); render(); } finally { $("busy").style.display = "none"; }
 }
-const post = (path, body) => call(`${API}/classes/${C.class_id}/${path}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
-async function refresh() {
-  if (C) C = await call(`${API}/classes/${C.class_id}`);
-  render();
-}
+async function refresh() { if (C) C = await call(`${API}/classes/${C.class_id}`); render(); }
+
+// Each action runs the modules behind it, so the teacher sees steps, not modules.
+const analyse = async () => { await module_("identify"); await module_("insights").catch(() => {}); };
+const ACTIONS = {
+  uploaded: ["Analyse the class", "Reading every student's answers…", analyse],
+  identified: ["Find the fixes and form groups", "Matching fixes and forming groups…", async () => { await module_("interventions"); await module_("clusters"); }],
+  mapped: ["Form groups", "Forming groups…", () => module_("clusters")],
+  grouped: ["Build the teaching plan", "Drafting the plan and materials…", () => module_("instruction")],
+  planned: ["Approve the plan", "Approving…", () => post("plan/approve", {})],
+  approved: ["Create the re-test paper", "Creating and checking version 2…", () => module_("reassessment-paper")],
+  v2_uploaded: ["Compare version 1 and 2", "Reading version 2 and comparing…", async () => { await module_("reassessment-score"); await module_("profile"); }],
+  scored: ["Update student profiles", "Updating profiles…", () => module_("profile")],
+};
+function act() { const a = ACTIONS[C.stage]; if (a) step(a[1], a[2]); }
+
 async function createClass() {
   const pack = $("pack").value, name = $("name").value.trim() || "My class";
   await step("Creating the class…", async () => {
-    const made = await call(`${API}/classes`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ pack, name }) });
-    C = { class_id: made.class_id };
-    history.replaceState(null, "", `?class=${made.class_id}`);
+    C = { class_id: (await call(`${API}/classes`, json({ pack, name }))).class_id };
+    history.replaceState(null, "", `?class=${C.class_id}`);
   });
 }
 async function uploadBytes(round, body, filename) {
-  await step("Reading the answer sheets…", () => call(`${API}/classes/${C.class_id}/upload/${round}?filename=${encodeURIComponent(filename)}`, { method: "POST", body }));
+  await step(round === "v1" ? "Reading every student's answers…" : "Reading version 2 and comparing…", async () => {
+    await call(`${API}/classes/${C.class_id}/upload/${round}?filename=${encodeURIComponent(filename)}`, { method: "POST", body });
+    if (round === "v1") await analyse();
+    else { await module_("reassessment-score"); await module_("profile"); }
+  });
 }
-function uploadFile(round) {
-  const file = $(`file-${round}`).files[0];
-  if (file) uploadBytes(round, file, file.name); else { $("error").textContent = "Choose a file first."; $("error").style.display = "block"; }
-}
-async function useSample(round) {
-  const res = await fetch(`${API}/files/${C.pack}/${round}?sample=true`);
-  uploadBytes(round, await res.text(), "sample.csv");
-}
-const runModule = (route, message) => step(message, () => call(`/api/adaptive/${route}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ classId: C.class_id }) }));
-const probe = (student, c, outcome) => step("Saving the probe result…", () => post("probes", { student, code: c, outcome }));
+function uploadFile(round) { const f = $(`file-${round}`).files[0]; if (f) uploadBytes(round, f, f.name); else showError("Choose a file first."); }
+async function useSample(round) { uploadBytes(round, await (await fetch(`${API}/files/${C.pack}/${round}?sample=true`)).text(), "sample.csv"); }
+const probe = (student, code, outcome) => step("Saving the follow-up result…", () => post("probes", { student, code, outcome }));
 const move = (student, from_group, to_group) => to_group && step("Moving the student…", () => post("groups/move", { student, from_group, to_group, rationale: "Teacher edit" }));
-function raise(index) {
-  const ids = C.feeds.m5.groups.map(g => g.group_id);
-  [ids[index - 1], ids[index]] = [ids[index], ids[index - 1]];
-  step("Changing the order…", () => post("groups/priority", { group_ids: ids }));
-}
-const approve = () => step("Approving the plan…", () => post("plan/approve", {}));
+function raise(i) { const ids = C.feeds.m5.groups.filter(g => g.delivery === "teacher").map(g => g.group_id); [ids[i-1], ids[i]] = [ids[i], ids[i-1]]; const rest = C.feeds.m5.groups.filter(g => g.delivery !== "teacher").map(g => g.group_id); step("Changing the order…", () => post("groups/priority", { group_ids: [...ids, ...rest] })); }
+function pickTab(i) { tab = i; drawAnswers(); }
+function pickStudent(v) { who = v; $("one").innerHTML = oneStudent(); }
 
-function card(title, purpose, stage, api, chipHtml, body, runButton) {
-  const locked = stage && !reached(stage);
-  return `<section class="${locked ? "locked" : ""}"><div class="head"><div><h2>${title}</h2><p class="muted small">${purpose}</p>${api ? `<p class="small muted">API: ${code(api)}</p>` : ""}</div><div>${chipHtml || ""}</div></div>${body || ""}${runButton || ""}</section>`;
-}
-const uploadReport = r => !r ? "" : `<p class="small"><b>${r.students}</b> students read, ${r.blank_answers} blank answers, ${r.rejected.length} rows rejected, ${r.warnings.length} warnings.</p>
-  ${r.rejected.length ? table(["Row","Reason"], r.rejected.map(x => [x.row, esc(x.reason)])) : ""}${r.warnings.length ? table(["Row","Student","Question","Warning"], r.warnings.map(x => [x.row, esc(x.student), esc(x.question), esc(x.message)])) : ""}`;
-const runBtn = (ready, route, label, message) => ready ? `<div class="row"><button onclick="runModule('${route}','${message}')">${label}</button></div>` : "";
-const nextText = n => n.action === "group" ? `Group ${code(n.target)}${n.held_for_later?.length ? `; later ${esc(n.held_for_later.join(", "))}` : ""}` : n.action === "probe" ? `Probe ${code(n.target)}` : n.action === "practice" ? `Practise ${esc(n.target.join(", "))}` : words(n.action);
+// ---- pictures for familiar question types
+const ICONS = {
+  card: '<svg viewBox="0 0 140 90" role="img" aria-label="A playing card"><rect x="40" y="4" width="60" height="82" rx="7" fill="var(--surface)" stroke="var(--ink)" stroke-width="2"/><text x="48" y="22" font-size="15" font-weight="700" fill="#c0392b">K</text><text x="70" y="56" font-size="26" fill="#c0392b" text-anchor="middle">♥</text><text x="92" y="80" font-size="15" font-weight="700" fill="#c0392b" text-anchor="end">K</text></svg>',
+  coins: '<svg viewBox="0 0 160 90" role="img" aria-label="Two coins"><circle cx="52" cy="42" r="30" fill="#d9a441" stroke="var(--ink)" stroke-width="2"/><text x="52" y="50" text-anchor="middle" font-size="22" font-weight="700" fill="#5a3e0c">H</text><circle cx="112" cy="42" r="30" fill="#d9a441" stroke="var(--ink)" stroke-width="2"/><text x="112" y="50" text-anchor="middle" font-size="22" font-weight="700" fill="#5a3e0c">T</text></svg>',
+  dice: '<svg viewBox="0 0 160 90" role="img" aria-label="Two dice"><rect x="22" y="14" width="56" height="56" rx="10" fill="var(--surface)" stroke="var(--ink)" stroke-width="2"/><g fill="var(--ink)"><circle cx="38" cy="28" r="4.5"/><circle cx="38" cy="42" r="4.5"/><circle cx="38" cy="56" r="4.5"/><circle cx="62" cy="28" r="4.5"/><circle cx="62" cy="42" r="4.5"/><circle cx="62" cy="56" r="4.5"/></g><rect x="92" y="14" width="56" height="56" rx="10" fill="var(--surface)" stroke="var(--ink)" stroke-width="2"/><g fill="var(--ink)"><circle cx="106" cy="28" r="4.5"/><circle cx="120" cy="42" r="4.5"/><circle cx="134" cy="56" r="4.5"/></g></svg>',
+};
+const chapter = (id, n, title, say, body) => `<section class="ch" id="${id}"><div class="chead"><span class="step">${n}</span><h2>${title}</h2><p class="say">${say}</p></div>${body}</section>`;
+const LOOP = [["Short test","created"],["Answers uploaded","uploaded"],["How each answer was solved","identified"],["Thinking errors found","identified"],["Fixes: student, teacher, our content","grouped"],["Teaching plan","approved"],["Re-test","scored"]];
 
-function viewUpload() {
-  const body = C.stage === "created" ? `<div class="row"><a class="btn ghost" href="${API}/files/${C.pack}/v1">Download template</a><input type="file" id="file-v1" accept=".csv,.xlsx" aria-label="Answer sheet file"><button onclick="uploadFile('v1')">Upload</button><button class="ghost" onclick="useSample('v1')">Use sample class</button></div>
-    <p class="small">${esc(C.subject_map.upload_hint)}</p><p class="small muted">One row per student, one column per question. Use student codes, not names. In Excel, format answer columns as text so 4/10 does not become a date.</p>` : uploadReport(C.uploads.v1);
-  return card("Bulk upload of answers","Everyone's answers, in one CSV or Excel file.",null,"POST /api/classes/{id}/upload/v1",null,body);
-}
-function viewM3() {
-  const f = C.feeds.m3;
-  let body = "";
-  if (f) {
-    const openProbes = f.students.filter(s => s.next.action === "probe" && C.stage === "identified");
-    body = (f.ai_failed_students ? `<p class="small" style="color:var(--warn)">${f.ai_failed_students} students could not be AI-marked; their written answers are with the teacher.</p>` : "") +
-      table(["Student","Evidence","Next step","For teacher"], f.students.map(s => [esc(s.student),
-        (Object.entries(s.summary).map(([c,v]) => `${code(c)} ${esc(C.subject_map.misconceptions[c]?.name)}: ${words(v.status)} (${esc(v.questions.join(", "))})`).join("<br>") || "All clear") +
-        `<details><summary>Every answer</summary>${table(["Q","Answer","Result","Finding"], s.answers.map(a => [esc(a.q), esc(a.working), words(a.result), a.findings.map(x => `${code(x.belief)} ${esc(x.confidence)}: ${esc(x.evidence)}`).join("<br>")]))}</details>`,
-        nextText(s.next), esc(s.teacher.join(", ")) || "None"]));
-    if (openProbes.length) body += `<h3>Follow-up probes: ask, then record the result</h3>` + table(["Student","Question to ask","Result"], openProbes.map(s => [esc(s.student), esc(s.next.probe) || `<span class="muted">No probe drafted: teacher to decide.</span>`,
-      `<button class="tiny" onclick="probe('${esc(s.student)}','${esc(s.next.target)}','supports')">Confirms it</button> <button class="tiny ghost" onclick="probe('${esc(s.student)}','${esc(s.next.target)}','rules_out')">Rules it out</button>`]));
-  }
-  return card("Module 3: Misconception identification","Reads each student's answers and forms evidence-linked hypotheses. AI marks written answers and places answers the rules could not, choosing only from the catalogue.","uploaded","POST /api/adaptive/identify",chip(f?.ai),body,runBtn(C.stage==="uploaded","identify","Analyse every student","AI is marking and analysing each student…"));
-}
-function viewM4() {
-  const f = C.feeds.m4; let body = "";
-  if (f) {
-    const needs = {};
-    f.mappings.filter(m => m.primary).forEach(m => { const k = m.primary.misconception_id; (needs[k] = needs[k] || { m: m.primary, s: [] }).s.push(m.student); });
-    body = table(["Need","Students","Intervention","Why"], Object.entries(needs).map(([k,v]) => [code(k), esc(v.s.join(", ")), `${code(v.m.recommended)}<br>${esc(f.titles[v.m.recommended])}<br><span class="chip warn">${words(v.m.review_status)}</span>`, esc(f.why[k]) || `<span class="muted">Ranked by matching evidence.</span>`]));
-  }
-  return card("Module 4: Intervention mapping","Retrieves curated interventions per need. AI chooses only from that list and explains why.","identified","POST /api/adaptive/interventions",chip(f?.ai),body,runBtn(C.stage==="identified","interventions","Map interventions","AI is choosing from the curated interventions…"));
-}
-function viewM5() {
-  const f = C.feeds.m5; let body = "";
-  if (f) {
-    const edit = C.stage === "grouped";
-    body = table(["Group need","Intervention","Students",""], f.groups.map((g,i) => [`<b>${esc(g.need)}</b><br><span class="small muted">${esc(f.reasons[g.group_id])}</span>`, `${code(g.intervention_id)}<br>${esc(f.titles[g.intervention_id])}`,
-      g.student_ids.map(s => esc(s) + (edit && f.groups.length > 1 ? ` <select aria-label="Move ${esc(s)}" onchange="move('${esc(s)}','${g.group_id}',this.value)"><option value="">move…</option>${f.groups.filter(o => o.group_id !== g.group_id).map(o => `<option value="${o.group_id}">${esc(o.need)}</option>`).join("")}</select>` : "")).join("<br>"),
-      edit && i ? `<button class="tiny ghost" onclick="raise(${i})">Move up</button>` : ""]));
-    if (f.cohorts.length) body += `<h3>Not in a teaching group this session</h3>` + table(["Need","Students","What they do"], f.cohorts.map(c => [esc(c.need), esc(c.student_ids.join(", ")), esc(c.task)]));
-    body += `<h3>Who owns each fix</h3>` + table(["Misconception","Share of class","Owners","Awaiting expert draft"], f.owners.map(r => [`${code(r.code)} ${esc(r.name)}`, `${r.students.length} students (${r.share_percent}%)`, esc(r.owners.join(", ")), esc(r.awaiting_expert_draft.join(", ")) || "None"]));
-  }
-  return card("Module 5: Student clustering","Temporary groups by current need, in teaching order. Move students or reorder groups before planning. AI words each group's need for the teacher.","mapped","POST /api/adaptive/clusters",chip(f?.ai),body,runBtn(C.stage==="mapped","clusters","Form groups","Forming groups…"));
-}
-function viewM6() {
-  const f = C.feeds.m6; let body = "";
-  if (f) {
-    const rows = f.plan.periods.flatMap(p => [[p.period,`0–${p.recap[1]}`,"Whole class recap",""], ...p.direct_teaching.map(s => [p.period,`${s.start}–${s.end}`,esc(f.needs[s.teacher_with]),s.independent_practice.length?"Supervised practice":""]), [p.period,`${p.exit_ticket[0]}–${p.exit_ticket[1]}`,"Exit ticket for all",""]]);
-    body = `<p class="small">Status: <b>${words(f.plan.status)}</b></p>` + table(["Period","Minutes","Teacher with","Everyone else"], rows);
-    if (f.plan.independent_cohorts.length) body += `<h3>Independent work</h3><ul class="tight">${f.plan.independent_cohorts.map(c => `<li>${esc(c.need)} (${esc(c.student_ids.join(", "))}): ${esc(c.task)}</li>`).join("")}</ul>`;
-    body += `<h3>Teaching materials</h3>` + Object.entries(f.plan.cards).map(([g,c]) => { const m = f.materials[g];
-      return `<details><summary>${esc(f.needs[g])}: ${esc(c.title)} (${esc(f.groups[g].join(", "))})</summary><p class="small"><b>Steps</b></p><ol class="tight">${c.steps.map(s=>`<li>${esc(s)}</li>`).join("")}</ol>${c.exit_check?`<p class="small"><b>Exit check:</b> ${esc(c.exit_check)}</p>`:""}${m?`<p class="small"><span class="chip warn">${esc(m.label)}</span></p><p class="small"><b>Teacher script</b></p><ul class="tight">${m.teacher_script.map(s=>`<li>${esc(s)}</li>`).join("")}</ul><p class="small"><b>Worksheet</b></p><ul class="tight">${m.worksheet.map(s=>`<li>${esc(s)}</li>`).join("")}</ul>${m.exit_ticket?`<p class="small"><b>Exit ticket:</b> ${esc(m.exit_ticket)}</p>`:""}`:`<p class="small muted">No AI draft for this group.</p>`}</details>`; }).join("");
-  }
-  const approveBtn = C.stage==="planned" ? `<div class="row"><button onclick="approve()">Approve this plan</button><span class="small muted">You can't change it after this. Unreviewed drafts are marked.</span></div>` : "";
-  return card("Module 6: Differentiated instruction","A plan one teacher can run, one group at a time. AI drafts teaching material within the chosen intervention.","grouped","POST /api/adaptive/instruction",chip(f?.ai),body,runBtn(C.stage==="grouped","instruction","Build the plan","AI is drafting teaching material…")+approveBtn);
-}
-function viewM7() {
-  const p = C.feeds["m7-paper"], s = C.feeds["m7-score"]; let body = "";
-  if (p) {
-    body = `<details ${C.stage==="paper_ready"?"open":""}><summary>V2 paper (${p.paper.length} new questions, same competencies)</summary>${table(["Q","Question","Marking","Check"], p.paper.map(i => [esc(i.id), esc(i.text), esc(i.answer), p.flags[i.id] ? `<span class="chip warn">${esc(p.flags[i.id])}</span>` : "Clear"]))}</details>`;
-    if (C.stage==="paper_ready") body += `<div class="row"><a class="btn ghost" href="${API}/files/${C.pack}/v2">Download V2 template</a><input type="file" id="file-v2" accept=".csv,.xlsx" aria-label="V2 answer sheet file"><button onclick="uploadFile('v2')">Upload V2 answers</button><button class="ghost" onclick="useSample('v2')">Use sample V2</button></div>`;
-    else body += uploadReport(C.uploads.v2);
-  }
-  if (s) {
-    const cmp = s.comparison;
-    body += `<h3>V1 against V2, by misconception</h3>` + table(["Misconception","V1 students","V2 students"], cmp.misconceptions.map(m => [`${code(m.code)} ${esc(m.name)}`, m.v1_students, m.v2_students]));
-    body += `<h3>V1 against V2, by student</h3>` + table(["Student","V1","V2","No longer seen","Still seen","New"], cmp.students.map(x => [esc(x.student), x.v1_percent===null?"n/a":x.v1_percent+"%", x.v2_percent===null?"n/a":x.v2_percent+"%", esc(x.no_longer_seen.join(", "))||"–", esc(x.still_seen.join(", "))||"–", esc(x.newly_seen.join(", "))||"–"]));
-    body += `<p class="small muted">A change in score is evidence to look at, not proof that the teaching caused it.</p>`;
-    if (cmp.did_not_sit.length) body += `<p class="small">Did not sit V2: ${esc(cmp.did_not_sit.join(", "))}</p>`;
-  }
-  return card("Module 7: Reassessment","A parallel paper for the class, then V1 against V2. The questions come from the question templates or the draft scenario bank. AI checks the paper for clarity and marks V2.","approved","POST /api/adaptive/reassessment-paper, then /reassessment-score",chip(s?.ai||p?.ai),body,runBtn(C.stage==="approved","reassessment-paper","Generate V2 paper","AI is reviewing the paper…")+runBtn(C.stage==="v2_uploaded","reassessment-score","Analyse V2 and compare","AI is marking V2…"));
-}
-function viewM8() {
-  const f = C.feeds.m8; let body = "";
-  if (f) {
-    if (f.narrative.class_summary) body += `<p>${esc(f.narrative.class_summary)}</p><p class="small"><span class="chip warn">AI draft: check against the V1 and V2 tables</span></p>`;
-    body += table(["Student","Competencies","Changed by V2","Next cycle",""], f.comparison.students.map(x => { const p = f.profiles[x.student]; const states = Object.values(p.competencies); const count = n => states.filter(c=>c.status===n).length;
-      return [esc(x.student), `${count("demonstrated")} demonstrated, ${count("developing")} developing, ${count("not_yet_demonstrated")} not yet, ${count("needs_review")} review`, p.timeline.filter(t=>t.session==="v2").map(t=>`${code(t.competency_id)} ${words(t.from)} → ${words(t.to)}`).join("<br>")||"–", nextText(x.next), esc(f.narrative.students[x.student])]; }));
-    body += `<p class="small muted">Status changes come from explicit rules; AI only words the summary. Audit trail: ${f.audit.length} recorded events.</p>`;
-  }
-  return card("Module 8: Profiles and next action","Adds V2 as new evidence, never overwriting V1, and recommends the next cycle. AI writes the plain-language summary.","scored","POST /api/adaptive/profile",chip(f?.ai),body,runBtn(C.stage==="scored","profile","Update profiles","Updating profiles…"));
-}
-const subjectLine = m => `${m.subject.subject}, ${m.subject.grade}: ${m.subject.chapter}`;
-function subjectMap(m) {
-  const reviewed = `${m.interventions.approved} of ${m.interventions.total} interventions expert-approved`;
-  return `<p class="small"><b>${esc(subjectLine(m))}</b> <span class="muted">(${esc(m.subject.board)}; ${esc(m.subject.source)})</span></p>
-    <p class="small muted">${Object.keys(m.competencies).length} competencies, ${Object.keys(m.misconceptions).length} misconception patterns, ${m.questions.length} questions; ${reviewed}.</p>
-    <details><summary>Competencies and misconceptions</summary>${table(["ID","Competency"], Object.entries(m.competencies).map(([k,c]) => [code(k), esc(c.name)]))}${table(["Code","Pattern","Belief","Competency"], Object.entries(m.misconceptions).map(([k,c]) => [code(k), esc(c.name), esc(c.belief), esc(c.competency_ids.join(", "))]))}</details>`;
-}
-const viewSubject = () => card("Subject", "Everything subject-specific comes from this pack. Every AI step is given this subject and scope.", null, "GET /api/subjects", null, subjectMap(C.subject_map));
-function showSubject() { $("subject-preview").innerHTML = subjectMap(SUBJECTS[$("pack").value]); }
 function viewNew() {
-  $("app").innerHTML = `<section><h2>Start a class</h2><p class="muted small">Choose the subject, then upload your class's answers.</p><div class="row"><select id="pack" aria-label="Subject" onchange="showSubject()">${Object.entries(SUBJECTS).map(([k,m]) => `<option value="${esc(k)}">${esc(subjectLine(m))}</option>`).join("")}</select><input type="text" id="name" placeholder="Class name" aria-label="Class name" maxlength="60"><button onclick="createClass()">Create class</button></div><div id="subject-preview" style="margin-top:12px"></div><p class="small muted">Use synthetic data for now: this demo has no sign-in.</p></section>`;
+  $("nav").innerHTML = ""; $("foot").textContent = "";
+  $("app").innerHTML = `<div class="hero"><span class="step">AI Decoder · Adaptive Teaching Engine</span><h1>We read how every student solved each question, find the thinking error behind each wrong answer, and send it to whoever can fix it.</h1>
+  <div class="panel"><h3>Start with a class</h3><div class="row"><select id="pack" aria-label="Subject" onchange="showSubject()">${Object.entries(SUBJECTS).map(([k,m]) => `<option value="${esc(k)}">${esc(subjectLine(m))}</option>`).join("")}</select><input type="text" id="name" placeholder="Class name" aria-label="Class name" maxlength="60"><button class="pri" onclick="createClass()">Create class</button></div><div id="preview" class="small muted"></div><p class="small muted">Use synthetic data for now: this demo has no sign-in.</p></div></div>`;
   showSubject();
 }
-function render() {
-  const index = C?.stage ? ORDER.indexOf(C.stage) : -1;
-  $("steps").innerHTML = NAV.map(([label, stage]) => { const at = ORDER.indexOf(stage); return `<li class="${index>=at?"done":at===index+1?"now":""}">${index>=at?"✓ ":""}${label}</li>`; }).join("");
-  if (!C?.stage) return viewNew();
-  $("title").textContent = `${C.name}: ${subjectLine(C.subject_map)}. Bookmark this page to come back to this class.`;
-  $("app").innerHTML = viewSubject() + viewUpload() + viewM3() + viewM4() + viewM5() + viewM6() + viewM7() + viewM8();
+function showSubject() { const m = SUBJECTS[$("pack").value]; $("preview").textContent = `${m.subject.board}; ${m.subject.source}. ${m.questions.length} questions, ${Object.keys(m.competencies).length} competencies, ${Object.keys(m.misconceptions).length} known error patterns. ${m.interventions.approved} of ${m.interventions.total} interventions expert-approved.`; }
+
+function viewHero() {
+  const f = C.feeds.m3, o = f?.overview, i = ORDER.indexOf(C.stage);
+  const tiles = o ? `<div class="tiles">${[[o.students,"students"],[o.answers_read,"answers read"],[o.thinking_errors,"thinking errors found"],[o.right_answer_wrong_reason,"right answers with a wrong reason"]].map(t => `<div class="tile"><b class="num">${t[0]}</b><span class="muted">${t[1]}</span></div>`).join("")}</div>` : "";
+  const loop = LOOP.map(([l,s],n) => { const at = ORDER.indexOf(s), nextAt = LOOP.findIndex(x => ORDER.indexOf(x[1]) > i); return `<span class="s ${i >= at ? "done" : n === nextAt ? "now" : ""}">${l}</span>`; }).join('<span class="a">→</span>');
+  const up = C.stage === "created" ? `<div class="panel"><h3>Upload the class's answers</h3><p class="small">${esc(C.subject_map.upload_hint)}</p><div class="row"><a class="btn" href="${API}/files/${C.pack}/v1">Download template</a><input type="file" id="file-v1" accept=".csv,.xlsx" aria-label="Answer file"><button class="pri" onclick="uploadFile('v1')">Upload and analyse</button><button onclick="useSample('v1')">Use sample class</button></div><p class="small muted">One row per student, one column per question. Use student codes, not names. In Excel, format answer columns as text so 4/10 does not become a date.</p></div>` : "";
+  const report = C.uploads.v1 && (C.uploads.v1.rejected.length || C.uploads.v1.warnings.length) ? uploadProblems(C.uploads.v1) : "";
+  return `<div class="hero" id="top"><span class="step">AI Decoder · Adaptive Teaching Engine · ${esc(subjectLine(C.subject_map))}</span><h1>We read how every student solved each question, find the thinking error behind each wrong answer, and send it to whoever can fix it.</h1><p class="say">${esc(C.name)}${o ? `: a test of ${f.questions.length} questions, ${plural(o.students, "student")}. Below is what the system sees.` : "."}</p>${tiles}<div class="loop" aria-label="The process">${loop}</div>${up}${report}${aiNotes()}</div>`;
 }
+function uploadProblems(r) { return `<div class="note">${r.rejected.length ? `<b>${plural(r.rejected.length, "row")} not used:</b> ${r.rejected.map(x => `row ${x.row} (${esc(x.reason)})`).join("; ")}. ` : ""}${r.warnings.length ? `<b>${plural(r.warnings.length, "answer")} to check:</b> ${r.warnings.slice(0, 6).map(x => `${esc(x.student)} ${esc(x.question)}`).join(", ")}.` : ""}</div>`; }
+function aiNotes() {
+  const f = C.feeds, bad = [["Reading answers", f.m3?.ai],["Interventions", f.m4?.ai],["Groups", f.m5?.ai],["Teaching material", f.m6?.ai],["Paper check", f["m7-paper"]?.ai],["Re-test reading", f["m7-score"]?.ai],["Summary", f.m8?.ai]].filter(x => ["failed","partial","off"].includes(x[1]));
+  return bad.length ? `<div class="note">AI was unavailable for: ${bad.map(x => x[0]).join(", ")}. Those parts use the rules alone${f.m3?.ai_failed_students ? `, and ${plural(f.m3.ai_failed_students, "student")}'s written answers went to the teacher` : ""}.</div>` : "";
+}
+function viewTest() {
+  const f = C.feeds.m3; if (!f) return "";
+  return chapter("test","1 · THE TEST","The questions","Students write their working, not just the answer.", `<div class="qs">${f.questions.map((q,i) => `<div class="panel">${q.level ? `<span class="badge ${esc(q.level)}">Q${i+1} · ${esc(q.level)}</span>` : ""}${ICONS[q.icon] || ""}<h3>${esc(q.text)}</h3><p class="small muted">Answer: <span class="num">${esc(q.answer)}</span> · <span class="num">${q.sound}</span> of ${q.students} solved it soundly</p></div>`).join("")}</div>`);
+}
+function viewAnswers() {
+  if (!C.feeds.m3) return "";
+  return chapter("answers","2 · WHAT STUDENTS WROTE","Same question, very different thinking","Each dot is one student. A mark of right or wrong hides most of what the sheet tells us.", `<div class="tabs" role="tablist">${C.feeds.m3.questions.map((q,i) => `<button role="tab" onclick="pickTab(${i})" id="tab${i}">${esc(q.id)}</button>`).join("")}</div><div class="qview"><div class="panel" id="wbox"></div><div style="display:grid;gap:12px"><div class="sheets" id="sheets"></div><div class="callout" id="callout"></div></div></div>`);
+}
+function drawAnswers() {
+  const f = C.feeds.m3; if (!f || !$("wbox")) return;
+  const q = f.questions[Math.min(tab, f.questions.length - 1)];
+  f.questions.forEach((_,i) => $(`tab${i}`).setAttribute("aria-selected", String(i === tab)));
+  const totals = {}; q.ways.forEach(w => totals[w.level] = (totals[w.level]||0) + w.count);
+  $("wbox").innerHTML = `<div><span class="big num">${q.sound}/${q.students}</span> <span class="muted">solved it soundly</span></div><div class="waffle" role="img" aria-label="${esc(q.ways.map(w => `${w.count} ${w.label}`).join("; "))}">${q.ways.flatMap(w => Array(w.count).fill(`<i data-w="${esc(w.id)}" title="${esc(w.error_name || w.label)}" style="background:${color(w.level)}"></i>`)).join("")}</div><div class="legend">${Object.keys(LABELS).filter(l => totals[l]).map(l => `<span><i class="sw" style="background:${color(l)}"></i>${LABELS[l]} <span class="num muted">${totals[l]}</span></span>`).join("")}</div>`;
+  $("sheets").innerHTML = q.ways.filter(w => w.level !== "blank").map(w => `<div class="sheet" tabindex="0" data-w="${esc(w.id)}" style="--c:${color(w.level)}"><div class="top"><span>${esc(w.label)}</span><span class="num">${plural(w.count, "student")}</span></div><div class="hand">${nl(w.sample)}</div><div class="think">${w.error_name ? `<b>${esc(w.error_name)}.</b> ` : ""}${esc(w.think)}</div></div>`).join("");
+  const dim = id => document.querySelectorAll(".waffle i").forEach(d => d.classList.toggle("dim", !!id && d.dataset.w !== id));
+  document.querySelectorAll(".sheet").forEach(s => { s.onmouseenter = s.onfocus = () => dim(s.dataset.w); s.onmouseleave = s.onblur = () => dim(null); });
+  const c = $("callout"); c.textContent = q.callout || `${q.sound} of ${q.students} solved this soundly, in ${plural(q.ways.filter(w => w.level !== "blank").length, "different way")}.`;
+}
+function viewReveals() {
+  const f = C.feeds.m3; if (!f) return "";
+  const rows = f.class.misconceptions, n = f.class.class_size;
+  return chapter("reveals","3 · WHAT IT REVEALS","Wrong answers trace back to a few thinking errors",`Across all ${f.overview.answers_read} answers, most wrong answers come from a few patterns. Each one has a cause we can name and fix.`, `<div class="mgrid">${rows.map(r => `<div class="panel ${r.kind !== "belief" ? "gap" : ""}"><span class="small muted">${r.kind === "belief" ? "Thinking error" : r.kind === "fact" ? "Missing fact" : "Slip"}</span><h3>${esc(r.name)}</h3><div class="pct"><b class="num">${Math.round(r.share_percent)}%</b><span class="muted">${r.students.length} of ${n} students</span></div><div class="bar"><div style="width:${r.share_percent}%"></div></div><p style="font-size:14px">${esc(r.why)}</p>${r.examples.map(x => `<div class="ex">${esc(x.q)}: <span class="hand" style="font-size:20px">${esc(x.sample.split("\n").join(" → "))}</span></div>`).join("")}</div>`).join("")}</div>${probes()}`);
+}
+function probes() {
+  const open = C.feeds.m3.students.filter(s => s.next.action === "probe" && C.stage === "identified");
+  if (!open.length) return "";
+  return `<div class="panel"><h3>Follow-up questions</h3><p class="small muted">The evidence is thin for these students. Ask, then record what you found. Anyone you skip stays out of a teaching group for now.</p>${table(["Student","About","Ask","What you found"], open.map(s => [esc(s.student), esc(nameOf(s.next.target)), esc(s.next.probe) || '<span class="gaps">No question drafted yet. Use your judgement.</span>', `<div class="row"><button class="tiny" onclick="probe('${esc(s.student)}','${esc(s.next.target)}','supports')">Confirms it</button><button class="tiny" onclick="probe('${esc(s.student)}','${esc(s.next.target)}','rules_out')">Rules it out</button></div>`]))}</div>`;
+}
+function viewFixes() {
+  if (!reached("identified")) return "";
+  const rows = C.feeds.m3.class.misconceptions;
+  const col = o => { const list = rows.filter(r => r.owners.includes(o)); return `<div class="panel own" style="--oc:var(${OWNER[o][1]})"><h3><span>${OWNER[o][0]}</span><span class="num">${list.length}</span></h3>${list.length ? list.map(r => `<div class="act"><span class="tag">${esc(r.name)} · ${plural(r.students.length,"student")}${r.owners[0] === o ? " · main fix" : ""}</span><span>${r.remedies[o] ? esc(r.remedies[o]) : '<span class="gaps">Awaiting expert draft.</span>'}</span></div>`).join("") : '<p class="small muted">Nothing routed here in this class.</p>'}</div>`; };
+  return chapter("fixes","4 · WHO FIXES IT","Each error goes to the person who can fix it","How many students share an error decides where the main fix goes. If a quarter of the class or more makes it, the cause is in the material, so we change our content.", `<div class="rule"><span class="r" style="background:var(--content)">25% or more → our content</span><span class="r" style="background:var(--teacher)">10% to 24% → teacher</span><span class="r" style="background:var(--student)">Under 10%, or a slip → student</span><span class="small muted">Every affected student also gets their own practice card.</span></div><div class="owners">${col("content")}${col("teacher")}${col("student")}</div>`);
+}
+function material(c, m) {
+  return `<ol class="t">${c.steps.map(s => `<li>${esc(s)}</li>`).join("")}</ol>${c.exit_check ? `<p class="small"><b>Exit check:</b> ${esc(c.exit_check)}</p>` : ""}${c.practice.length ? `<p class="small"><b>Practice</b></p><ul class="t">${c.practice.map(p => `<li>${esc(p.text)} <span class="muted">(${esc(c.answer_key[p.id] || "")})</span></li>`).join("")}</ul>` : ""}${m ? `<p class="small"><span class="draft">${esc(m.label)}</span></p><p class="small"><b>Teacher script</b></p><ul class="t">${m.teacher_script.map(s => `<li>${esc(s)}</li>`).join("")}</ul><p class="small"><b>Worksheet</b></p><ul class="t">${m.worksheet.map(s => `<li>${esc(s)}</li>`).join("")}</ul>${m.exit_ticket ? `<p class="small"><b>Exit ticket:</b> ${esc(m.exit_ticket)}</p>` : ""}` : ""}`;
+}
+function viewPlan() {
+  const g = C.feeds.m5, p = C.feeds.m6; if (!g) return "";
+  const edit = C.stage === "grouped", taught = g.groups.filter(x => x.delivery === "teacher"), cards = g.groups.filter(x => x.delivery !== "teacher");
+  const member = x => x.student_ids.map(s => `<span>${esc(s)}${edit && g.groups.length > 1 ? ` <select aria-label="Move ${esc(s)}" onchange="move('${esc(s)}','${esc(x.group_id)}',this.value)"><option value="">move…</option>${g.groups.filter(o => o.group_id !== x.group_id).map(o => `<option value="${esc(o.group_id)}">${esc(o.need)}</option>`).join("")}</select>` : ""}</span>`).join(edit ? "<br>" : ", ");
+  let body = `<div class="qs">${taught.map((x,i) => `<div class="panel"><span class="tag">TEACHER-LED · ${plural(x.student_ids.length,"student")}${x.status === "approved" ? " · APPROVED" : ""}</span><h3>${esc(x.need)}</h3><p class="small muted">${esc(g.reasons[x.group_id])}</p><p class="small"><b>${esc(g.titles[x.intervention_id])}</b> <span class="draft">Unreviewed draft</span></p><div class="small">${member(x)}</div>${edit && i ? `<div><button class="tiny" onclick="raise(${i})">Teach earlier</button></div>` : ""}</div>`).join("")}</div>`;
+  const others = [...cards.map(x => [`<b>${esc(x.need)}</b>`, member(x), `Practice card: ${esc(g.titles[x.intervention_id])}`]), ...g.cohorts.map(c => [`<b>${esc(c.need)}</b>`, esc(c.student_ids.join(", ")), esc(c.task)])];
+  if (others.length) body += `<div class="panel"><h3>Everyone else has work too</h3><p class="small muted">Needs under 10% go to a practice card, so teacher time goes where more students need it.</p>${table(["Need","Students","What they do"], others)}</div>`;
+  if (p) {
+    const rows = p.plan.periods.flatMap(x => [[x.period,`0–${x.recap[1]}`,"Whole class recap",""], ...x.direct_teaching.map(s => [x.period,`${s.start}–${s.end}`,esc(p.needs[s.teacher_with]),"Supervised practice and cards"]), [x.period,`${x.exit_ticket[0]}–${x.exit_ticket[1]}`,"Exit ticket for all",""]]);
+    body += `<div class="panel"><h3>The timetable <span class="small muted">(${p.plan.status === "approved" ? "approved" : "recommended"})</span></h3>${rows.length ? table(["Period","Minutes","Teacher with","Everyone else"], rows) : '<p class="small muted">No teacher-led group is needed in this class.</p>'}</div><div class="panel"><h3>Teaching materials</h3>${Object.entries(p.plan.cards).map(([id,c]) => `<details><summary>${esc(p.needs[id])}: ${esc(c.title)} (${esc(p.groups[id].join(", "))})</summary>${material(c, p.materials[id])}</details>`).join("")}</div>`;
+  }
+  return chapter("plan","5 · THE PLAN","Temporary groups, and a plan one teacher can run","Groups describe a need and last only until the re-test. One teacher, one group at a time.", body);
+}
+function viewRetest() {
+  const p = C.feeds["m7-paper"], s = C.feeds["m7-score"], n = C.feeds.m8; if (!p) return "";
+  let body = `<details ${C.stage === "paper_ready" ? "open" : ""}><summary>Version 2 paper: ${plural(p.paper.length,"new question")}, same competencies</summary>${table(["Q","Question","Answer","Check"], p.paper.map(i => [esc(i.id), esc(i.text), esc(i.answer), p.flags[i.id] ? `<span class="draft">${esc(p.flags[i.id])}</span>` : "Clear"]))}</details>`;
+  if (Object.keys(p.flags).length) body += `<div class="note">${plural(Object.keys(p.flags).length,"question")} flagged for clarity. Read ${Object.keys(p.flags).length === 1 ? "it" : "them"} before printing.</div>`;
+  if (C.stage === "paper_ready") body += `<div class="panel"><h3>Upload version 2 answers</h3><div class="row"><a class="btn" href="${API}/files/${C.pack}/v2">Download template</a><input type="file" id="file-v2" accept=".csv,.xlsx" aria-label="Version 2 answer file"><button class="pri" onclick="uploadFile('v2')">Upload and compare</button><button onclick="useSample('v2')">Use sample version 2</button></div></div>`;
+  if (s) {
+    const c = s.comparison, max = Math.max(1, ...c.misconceptions.flatMap(m => [m.v1_students, m.v2_students]));
+    body += `<div class="panel"><h3>Students showing each error</h3><div class="legend" style="grid-auto-flow:column;justify-content:start;gap:16px"><span><i class="sw" style="background:var(--wrong)"></i>Version 1</span><span><i class="sw" style="background:var(--secure)"></i>Version 2</span></div>${c.misconceptions.map(m => `<div class="cmp"><span>${esc(m.name)}</span><span class="two"><div class="a" style="width:${100*m.v1_students/max}%" title="Version 1: ${m.v1_students}"></div><div class="b" style="width:${100*m.v2_students/max}%" title="Version 2: ${m.v2_students}"></div></span></div><p class="small muted num">${m.v1_students} → ${m.v2_students} students</p>`).join("")}${n?.narrative.class_summary ? `<div class="callout">${esc(n.narrative.class_summary)}</div><p><span class="draft">AI draft: check against the numbers above</span></p>` : ""}<p class="small muted">A change is evidence to look at, not proof that the teaching caused it.${c.did_not_sit.length ? ` Did not sit version 2: ${esc(c.did_not_sit.join(", "))}.` : ""}</p></div>`;
+  }
+  return chapter("retest","6 · RE-TEST","Version 2: new questions, same thinking tested","One paper for the class, so it can be printed. Then each student's version 1 and 2, side by side.", body);
+}
+function oneStudent() {
+  const f3 = C.feeds.m3, s = f3.students.find(x => x.student === who) || f3.students[0], cmp = C.feeds["m7-score"], m8 = C.feeds.m8;
+  if (!s) return "";
+  const v1 = `<div class="panel"><h3>Version 1</h3>${s.answers.map(a => `<div class="vrow"><span>${esc(a.q)}</span><span><span class="chip" style="background:${color(a.level)}">${esc(a.label)}</span><br><span class="hand" style="font-size:20px">${esc(a.working.split("\n").join(" → "))}</span></span></div>`).join("")}</div>`;
+  const codes = [...new Set(s.answers.map(a => a.error).filter(Boolean))], rows = f3.class.misconceptions;
+  const items = codes.flatMap(c => { const r = rows.find(x => x.code === c); return !r ? [] : r.owners.flatMap(o => r.remedies[o] ? [`<div class="vrow" style="grid-template-columns:78px minmax(0,1fr)"><b style="color:var(${OWNER[o][1]})">${o === "student" ? esc(s.student) : OWNER[o][0]}</b><span>${esc(r.remedies[o])}</span></div>`] : []); });
+  const plan = `<div class="panel"><h3>The plan</h3>${items.join("") || '<p class="small muted">Nothing to fix here: on to extension work.</p>'}</div>`;
+  const answers = cmp?.answers[s.student], row = cmp?.comparison.students.find(x => x.student === s.student);
+  const paper = C.feeds["m7-paper"]?.paper || [];
+  const v2 = answers ? `<div class="panel"><h3>Version 2</h3>${answers.map(a => `<div class="vrow"><span>${esc(a.q)}</span><span><span class="chip" style="background:${color(a.level)}">${esc(a.label)}</span><br><span class="hand" style="font-size:20px">${esc(a.working.split("\n").join(" → "))}</span></span></div>`).join("")}<p class="small"><b>${row.v1_percent ?? "n/a"}% → ${row.v2_percent ?? "n/a"}%</b> solved soundly on the same competencies.</p>${m8?.narrative.students[s.student] ? `<p class="small">${esc(m8.narrative.students[s.student])} <span class="draft">AI draft</span></p>` : ""}</div>`
+    : `<div class="panel"><h3>Version 2 · re-test targets</h3>${cmp ? '<p class="small muted">Did not sit version 2.</p>' : s.answers.filter(a => !["secure","blank"].includes(a.level)).map(a => `<div class="vrow"><span>${esc(a.q)}</span><span class="chip t">Show the method on a new question of this kind</span></div>`).join("") || '<p class="small muted">Hold: correct, method shown.</p>'}<p class="small muted">New questions of the same kind, not the same ones.${paper.length ? "" : " The paper is created after the plan is approved."}</p></div>`;
+  return v1 + plan + v2;
+}
+function viewOne() {
+  const f = C.feeds.m3; if (!f) return "";
+  if (!who) who = (f.students.find(s => s.next.action === "group") || f.students[0]).student;
+  return chapter("student","7 · ONE STUDENT","One student: version 1, the plan, version 2","Pick a student to follow them through.", `<div class="row"><label class="small" for="pick">Student</label><select id="pick" onchange="pickStudent(this.value)">${f.students.map(s => `<option ${s.student === who ? "selected" : ""}>${esc(s.student)}</option>`).join("")}</select></div><div class="ba" id="one">${oneStudent()}</div>`);
+}
+function viewSystem() {
+  const f = C.feeds, m = C.subject_map, status = v => v ? ({ ok: "AI applied", partial: "AI partly applied", failed: "Rules only (AI failed)", off: "Rules only (AI off)" }[v] || v) : "Not run";
+  const rows = [["3 Misconception identification","/api/adaptive/identify, /insights",f.m3?.ai],["4 Intervention mapping","/api/adaptive/interventions",f.m4?.ai],["5 Student clustering","/api/adaptive/clusters",f.m5?.ai],["6 Differentiated instruction","/api/adaptive/instruction",f.m6?.ai],["7 Reassessment","/api/adaptive/reassessment-paper, /reassessment-score",f["m7-score"]?.ai||f["m7-paper"]?.ai],["8 Profiles and next action","/api/adaptive/profile",f.m8?.ai]];
+  return `<section class="ch" id="system"><details><summary>Subject map and system details</summary><p class="small" style="margin:8px 0"><b>${esc(subjectLine(m))}</b> (${esc(m.subject.board)}; ${esc(m.subject.source)}). ${m.interventions.approved} of ${m.interventions.total} interventions expert-approved.</p>${table(["Module","API","Status"], rows.map(r => [r[0], `<span class="num small">${r[1]}</span>`, status(r[2])]))}<br>${table(["Competency","Name"], Object.entries(m.competencies).map(([k,c]) => [esc(k), esc(c.name)]))}<br>${table(["Error pattern","Belief","Kind"], Object.entries(m.misconceptions).map(([k,c]) => [esc(c.name), esc(c.belief), esc(c.kind)]))}${f.m8 ? `<p class="small muted" style="margin-top:8px">Audit trail: ${plural(f.m8.audit.length,"recorded event")}.</p>` : ""}</details></section>`;
+}
+function render() {
+  if (!C?.stage) return viewNew();
+  const parts = [["top","Overview",1],["test","1 The test",C.feeds.m3],["answers","2 What students wrote",C.feeds.m3],["reveals","3 What it reveals",C.feeds.m3],["fixes","4 Who fixes it",C.feeds.m3],["plan","5 The plan",C.feeds.m5],["retest","6 Re-test",C.feeds["m7-paper"]],["student","7 One student",C.feeds.m3]].filter(x => x[2]);
+  const a = ACTIONS[C.stage];
+  $("nav").innerHTML = parts.map(([id,l]) => `<a href="#${id}">${l}</a>`).join("") + `<span class="sp"></span>${a ? `<button class="pri" onclick="act()">${a[0]} →</button>` : ""}`;
+  $("app").innerHTML = viewHero() + viewTest() + viewAnswers() + viewReveals() + viewFixes() + viewPlan() + viewRetest() + viewOne() + viewSystem();
+  $("foot").textContent = "The routing thresholds (25% and 10%) are our proposal, to be calibrated on real classes. Interventions are unreviewed drafts until a subject expert approves them. Bookmark this page to return to this class.";
+  drawAnswers(); mark();
+}
+function mark() { let on = 0; const links = [...document.querySelectorAll("nav a")]; links.forEach((l,i) => { const el = document.querySelector(l.getAttribute("href")); if (el && el.getBoundingClientRect().top <= 90) on = i; }); links.forEach((l,i) => l.classList.toggle("on", i === on)); }
+window.addEventListener("scroll", mark, { passive: true });
 (async () => {
   SUBJECTS = await call(`${API}/subjects`);
   const id = new URLSearchParams(location.search).get("class");
-  if (id) { C = { class_id: id }; try { await refresh(); return; } catch { C = null; $("error").textContent = "That class was not found."; $("error").style.display = "block"; } }
+  if (id) { C = { class_id: id }; try { await refresh(); return; } catch { C = null; showError("That class was not found."); } }
   render();
 })();
 </script>

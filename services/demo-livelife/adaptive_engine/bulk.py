@@ -30,9 +30,12 @@ def _read_csv(data):
     return [row for row in csv.reader(io.StringIO(text))]
 
 
-def _read_excel(data):
+def _read_excel(data, question_ids):
+    """Reads the worksheet whose header matches this paper, so one workbook can hold both V1 and V2."""
     try:
-        sheet = load_workbook(io.BytesIO(data), read_only=True, data_only=True).worksheets[0]
+        sheets = load_workbook(io.BytesIO(data), read_only=True, data_only=True).worksheets
+        wanted = set(question_ids)
+        sheet = next((s for s in sheets if wanted <= {str(c).strip() for c in next(s.iter_rows(values_only=True, max_row=1), ())}), sheets[0])
     except Exception as err:
         raise UploadError("The Excel file could not be opened.") from err
     rows = []
@@ -47,7 +50,7 @@ def parse_upload(data, filename, question_ids):
         raise UploadError("The file is empty.")
     if len(data) > MAX_BYTES:
         raise UploadError("The file is larger than 2 MB.")
-    rows = _read_excel(data) if filename.lower().endswith((".xlsx", ".xlsm")) else _read_csv(data)
+    rows = _read_excel(data, question_ids) if filename.lower().endswith((".xlsx", ".xlsm")) else _read_csv(data)
     rows = [r for r in rows if any(str(c).strip() for c in r)]
     if not rows:
         raise UploadError("The file has no rows.")

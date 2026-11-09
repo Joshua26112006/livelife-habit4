@@ -8,6 +8,13 @@ from fractions import Fraction as F
 from itertools import product
 
 
+def card_rank(qid, text, rank, in_deck=4):
+    """One card from a deck of 52; ask P(rank)."""
+    return dict(id=qid, text=text, type="card", correct=F(in_deck, 52), total=52,
+                signatures=[dict(belief="DECK", step="Favourable", value=F(1, 52), why=f"thinks there is only one {rank}"),
+                            dict(belief="MC-L", step="Sample space", value=F(1, 2), why=f"'{rank} or not' taken as two equal outcomes")])
+
+
 def bag_not(qid, text, counts, target):
     """Bag with category counts; ask P(not target)."""
     total = sum(counts.values())
@@ -127,3 +134,16 @@ ITEM_TAGS = {
 }
 for item in TEST:
     item["template"], item["competency_ids"] = ITEM_TAGS[item["id"]]
+
+# Our proposal, for expert review.
+LEVELS = {"T1": "easy", "T2": "easy", "T3": "medium", "T4": "medium", "T5": "hard", "T6": "medium", "T7": "medium", "T8": "easy", "T9": "medium", "T10": "medium"}
+ICONS = {"card_rank": "card", "coins_exactly": "coins", "coins_at_least_one": "coins", "dice_sum": "dice", "die_twice_at_least": "dice"}
+for item in TEST:
+    item["level"], item["icon"] = LEVELS[item["id"]], ICONS.get(item["template"])
+
+# The short three-question check: one easy, one medium, one hard.
+SHORT_TEST = [
+    {**card_rank("Q1", "A card is drawn from a shuffled deck of 52. Find P(king).", "king"), "template": "card_rank", "competency_ids": ["PROB-04", "PROB-05", "PROB-09"], "level": "easy", "icon": "card"},
+    {**coins_exactly("Q2", "Two coins are tossed together. Find P(exactly one head).", 2, 1), "template": "coins_exactly", "competency_ids": ["PROB-03", "PROB-10"], "level": "medium", "icon": "coins"},
+    {**die_twice_at_least("Q3", "A die is thrown twice. Find P(at least one six).", 6), "template": "die_twice_at_least", "competency_ids": ["PROB-10"], "level": "hard", "icon": "dice"},
+]

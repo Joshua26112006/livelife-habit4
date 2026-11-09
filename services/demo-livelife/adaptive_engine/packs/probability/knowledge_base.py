@@ -84,6 +84,10 @@ INTERVENTIONS = {
         ["Count frequency across the 36 ordered pairs.", "Build the distribution of sums 2 to 12.",
          "Compare the counts for 2, 7 and 12.", "Explain why the 11 sums are not equally likely."],
         (15, 20), ["6 x 6 table", "Tally chart"], ["dice_sum"]),
+    "INT-DECK": _entry(
+        "Know the deck",
+        ["Show a real pack.", "Count suits, ranks and face cards together."],
+        (2, 5), ["A pack of cards"], ["card_rank"], "How many queens are in a deck of 52? Find P(queen). (4/52)"),
     "INT-A": _entry(
         "'At least once' without adding",
         ["Shade row 5 and column 5 of the 6 x 6 table.", "Show they meet at (5, 5), so 6 + 6 counts it twice.",
@@ -107,6 +111,7 @@ INTERVENTION_MAP = {
     "MC-O": ["INT-PROB-03", "INT-PROB-04"],
     "MC-N": ["INT-PROB-06"],
     "MC-A": ["INT-A"],
+    "DECK": ["INT-DECK"],
     "MC-U": ["INT-U"],
     "SLIP-E": ["INT-S"],
     "SLIP-F": ["INT-PROB-08"],

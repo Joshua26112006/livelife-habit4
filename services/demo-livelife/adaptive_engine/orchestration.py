@@ -17,7 +17,7 @@ def _practice_items(pack, evidence_item_id):
     return [pack.parallel_item(pack.item(evidence_item_id), PRACTICE_ATTEMPT_BASE + i) for i in range(PRACTICE_ITEMS_PER_GROUP)]
 
 
-def plan_sessions(pack, groups, evidence_item_for, period_minutes=DEFAULT_PERIOD_MINUTES, cohorts=()):
+def plan_sessions(pack, groups, evidence_item_for, period_minutes=DEFAULT_PERIOD_MINUTES, cohorts=(), card_groups=()):
     """groups in priority order -> periods of direct-teaching slots, and a card for each group."""
     teaching_time = period_minutes - RECAP_MINUTES - EXIT_TICKET_MINUTES
     if teaching_time <= 0:
@@ -36,6 +36,8 @@ def plan_sessions(pack, groups, evidence_item_for, period_minutes=DEFAULT_PERIOD
         cards[group["group_id"]] = teaching_card(pack, group["intervention_id"], _practice_items(pack, evidence_item_for[group["group_id"]]))
     if current:
         periods.append(current)
+    for group in card_groups:
+        cards[group["group_id"]] = teaching_card(pack, group["intervention_id"], _practice_items(pack, evidence_item_for[group["group_id"]]))
 
     all_groups = [g["group_id"] for g in groups]
     schedule = []
@@ -55,7 +57,8 @@ def plan_sessions(pack, groups, evidence_item_for, period_minutes=DEFAULT_PERIOD
             "exit_ticket": [period_minutes - EXIT_TICKET_MINUTES, period_minutes],
             "deferred_to_later_period": [g for g in all_groups if g not in taught and not _taught_before(schedule, g)],
         })
-    return {"status": "recommended", "period_minutes": period_minutes, "periods": schedule, "cards": cards, "independent_cohorts": list(cohorts)}
+    return {"status": "recommended", "period_minutes": period_minutes, "periods": schedule, "cards": cards, "independent_cohorts": list(cohorts),
+            "practice_card_groups": [g["group_id"] for g in card_groups]}
 
 
 def _taught_before(schedule, group_id):

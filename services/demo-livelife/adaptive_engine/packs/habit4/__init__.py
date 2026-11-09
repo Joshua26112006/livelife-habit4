@@ -30,8 +30,8 @@ def _load_assessment():
 _assessment = _load_assessment()
 COMPETENCIES = {s["id"]: {"name": s["name"], "prerequisites": []} for s in _assessment.SCENARIOS}
 ITEMS = [{"id": q["id"], "text": q["stem"], "type": "mcq", "template": "mcq", "competency_ids": [q["competency"]],
-          "key": q["key"], "options": q["options"]} for q in _assessment.MCQS] + \
-        [{"id": s["id"], "text": s["question"], "type": "scenario", "template": "scenario", "competency_ids": [s["id"]]}
+          "key": q["key"], "options": q["options"], "level": "easy"} for q in _assessment.MCQS] + \
+        [{"id": s["id"], "text": s["question"], "type": "scenario", "template": "scenario", "competency_ids": [s["id"]], "level": "medium"}
          for s in _assessment.SCENARIOS]
 
 

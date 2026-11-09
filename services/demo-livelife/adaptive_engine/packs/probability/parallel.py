@@ -12,7 +12,12 @@ COLOURS = ["red", "blue", "green", "yellow", "white", "black", "pink"]
 NUMBER_WORDS = {3: "three", 4: "four", 5: "five", 6: "six"}
 MAX_TRIES = 200
 # "At least once in two throws" is 11/36 for every face, so only the face can change.
-SAME_ANSWER_TEMPLATES = ("die_twice_at_least",)
+SAME_ANSWER_TEMPLATES = ("die_twice_at_least", "card_rank")
+
+
+def _card(qid, rng):
+    rank = rng.choice(["queen", "jack", "ace", "ten"])
+    return t.card_rank(qid, f"A card is drawn from a shuffled deck of 52. Find P({rank}).", rank)
 
 
 def _bag_not(qid, rng):
@@ -76,7 +81,7 @@ def _argument(qid, rng):
                       rf"\b{parts}\b|{NUMBER_WORDS[parts]}|{red}/{parts}|{NUMBER_WORDS[red]} red")
 
 
-_BUILDERS = {"bag_not": _bag_not, "labelled_faces": _faces, "coins_exactly": _coins_exactly, "coins_at_least_one": _coins_at_least,
+_BUILDERS = {"card_rank": _card, "bag_not": _bag_not, "labelled_faces": _faces, "coins_exactly": _coins_exactly, "coins_at_least_one": _coins_at_least,
              "dice_sum": _dice_sum, "die_twice_at_least": _die_twice, "removal": _removal, "complement": _complement, "argument": _argument}
 
 
@@ -97,5 +102,6 @@ def parallel_item(original, attempt):
     for _ in range(MAX_TRIES):
         item = _BUILDERS[original["template"]](qid, rng)
         if _acceptable(item, original):
-            return {**item, "template": original["template"], "competency_ids": original["competency_ids"], "parallel_of": original["id"]}
+            return {**item, "template": original["template"], "competency_ids": original["competency_ids"], "parallel_of": original["id"],
+                    "level": original.get("level"), "icon": original.get("icon")}
     raise ValueError(f"no acceptable parallel item for {original['id']}")

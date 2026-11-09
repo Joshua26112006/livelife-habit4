@@ -27,6 +27,9 @@ _BARE_INTEGER = re.compile(r"\s*(?:p\s*=\s*|ans\w*\s*[:=]?\s*)?(-?\d+)\s*\.?\s*"
 _ANSWER_LABELS = re.compile(r"\b(ans|answer|final|result|hence|therefore|so|the|is|equals?|prob|probability)\b", re.I)
 _DISAGREES = re.compile(r"\b(no|not|wrong|disagree|incorrect)\b", re.I)
 _AGREES = re.compile(r"\b(yes|right|correct|agree)\b", re.I)
+_CATEGORY_TALK = re.compile(r"\b[a-z0-9]+ or (?:not |no )?(?:a |an )?[a-z0-9]+\b", re.I)
+_COMPLEMENT = re.compile(r"1\s*[-\u2212]\s*\d")
+_TABLE_WORDS = re.compile(r"\b(row|column|cells?|table)\b", re.I)
 
 
 def read_values(text):
@@ -63,6 +66,14 @@ def _shows_working(text, values):
     if len(values) > 1 or _PAIR.search(text) or _COIN_SEQUENCE.search(text):
         return True
     return bool(re.search(r"[a-z]{3,}", _ANSWER_LABELS.sub(" ", text), re.I))
+
+
+def _method(raw):
+    if _COMPLEMENT.search(raw):
+        return "complement"
+    if _PAIR.search(raw) or _COIN_SEQUENCE.search(raw) or _TABLE_WORDS.search(raw):
+        return "listing"
+    return "counting"
 
 
 def _read_argument(q, raw, trace):
@@ -144,11 +155,19 @@ def read_answer(q, raw):
     setup = setup_num / setup_den
     trace["final"] = str(final)
     trace["shows_working"] = _shows_working(raw, values)
+    trace["method"] = _method(raw)
 
     _read_listing(q, raw, trace)
 
     if final == q["correct"]:
         trace["steps"].setdefault("Total", f"{setup_den} ok" if q.get("total") else "ok")
+        # A right answer means nothing was missed, so a partial listing is shorthand and not a slip.
+        trace["findings"] = [f for f in trace["findings"] if f["belief"] != "SLIP-E"]
+        if q.get("total") and setup_den != q["total"] and len(values) == 1 and _CATEGORY_TALK.search(raw):
+            trace["findings"].append(dict(belief="MC-L", step="Sample space", confidence="high",
+                                          evidence=f"right value, but reasoned from categories, not the {q['total']} real outcomes"))
+            trace["result"] = "correct_wrong_reason"
+            return trace
         trace["result"] = "correct"
         return trace
 
@@ -176,7 +195,11 @@ def read_answer(q, raw):
         verdict = f"{setup_den} ok" if setup_den == q["total"] else f"used {setup_den}, should be {q['total']}"
         trace["steps"].setdefault("Total", verdict)
     level = "high" if trace["shows_working"] else "medium"
+    # A written list with a reversed pair missing is direct evidence of order; a total of 3 then adds nothing.
+    order_seen = any(f["belief"] == "MC-O" and f["step"] == "Sample space" for f in findings)
     for s in q["signatures"]:
+        if order_seen and s["belief"] == "MC-L":
+            continue
         if "total" in s and setup_den == s["total"] and setup_den != 1:
             findings.append(dict(belief=s["belief"], step=s["step"], confidence=level,
                                  evidence=f"denominator {setup_den}: {s['why']}"))

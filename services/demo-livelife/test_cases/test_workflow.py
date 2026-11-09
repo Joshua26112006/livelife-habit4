@@ -115,6 +115,20 @@ def test_excel_upload_including_a_fraction_turned_into_a_date():
     assert parsed["sheets"][0]["answers"] == {"T1": "", "T2": "1/3"} and parsed["warnings"]
 
 
+def test_one_workbook_can_hold_both_papers():
+    from openpyxl import Workbook
+    book = Workbook()
+    book.active.append(["notes"])
+    book.create_sheet().append(["student_id", "T1"])
+    book.worksheets[1].append(["s1", "1/2"])
+    book.create_sheet().append(["student_id", "T1-P1"])
+    book.worksheets[2].append(["s1", "3/4"])
+    out = io.BytesIO()
+    book.save(out)
+    assert bulk.parse_upload(out.getvalue(), "a.xlsx", ["T1"])["sheets"][0]["answers"] == {"T1": "1/2"}
+    assert bulk.parse_upload(out.getvalue(), "a.xlsx", ["T1-P1"])["sheets"][0]["answers"] == {"T1-P1": "3/4"}
+
+
 def test_second_v1_upload_is_refused():
     cid = new_class()
     upload(cid, "v1", sample_bytes("probability", "v1"))
@@ -346,7 +360,7 @@ def test_every_pack_describes_its_subject():
 
 def test_subjects_are_listed_for_the_screen():
     body = client.get(f"{API}/subjects").json()
-    assert set(body) == {"habit4", "probability"} and body["probability"]["subject"]["board"] == "CBSE"
+    assert set(body) == {"habit4", "probability", "probability-short"} and body["probability"]["subject"]["board"] == "CBSE"
     assert body["habit4"]["interventions"]["approved"] == 0
 
 
@@ -395,3 +409,90 @@ def test_a_new_subject_runs_through_every_module_with_no_engine_change():
     result = cycle.score_paper([{"id": "A", "answers": {i["id"]: "a" for i in paper}}])
     assert result["students"][0]["no_longer_seen"] == ["GAP"]
     assert cycle.profiles["A"].view()["competencies"]["C1"]["status"] == "demonstrated"
+
+
+# The class picture: the short check must reproduce the agreed sample analysis exactly
+def short_feed():
+    cid = new_class("probability-short")
+    upload(cid, "v1", sample_bytes("probability-short", "v1"))
+    return run(cid, "m3").json()
+
+
+def ways(question):
+    out = {}
+    for way in question["ways"]:
+        out[way["level"]] = out.get(way["level"], 0) + way["count"]
+    return out
+
+
+def test_sample_analysis_overview():
+    assert short_feed()["overview"] == {"students": 30, "answers_read": 90, "thinking_errors": 3, "right_answer_wrong_reason": 3}
+
+
+def test_sample_analysis_per_question():
+    q1, q2, q3 = short_feed()["questions"]
+    assert (q1["sound"], q2["sound"], q3["sound"]) == (18, 14, 9)
+    assert ways(q1) == {"secure": 16, "shown": 2, "slip": 5, "wrong": 6, "blank": 1}
+    assert ways(q2) == {"secure": 12, "shown": 2, "wrong": 15, "blank": 1}
+    assert ways(q3) == {"secure": 9, "wrong": 17, "blank": 4}
+
+
+def test_sample_analysis_who_fixes_it():
+    rows = {r["code"]: r for r in short_feed()["class"]["misconceptions"]}
+    assert {c: len(r["students"]) for c, r in rows.items()} == {"MC-L": 9, "MC-O": 7, "MC-A": 10, "DECK": 3, "SLIP-F": 2}
+    assert rows["MC-A"]["owners"][0] == "content" and rows["MC-L"]["owners"][0] == "content"
+    assert rows["MC-O"]["owners"][0] == "teacher" and rows["DECK"]["owners"][0] == "teacher"
+    assert rows["SLIP-F"]["owners"] == ["student"]
+
+
+def test_same_wrong_value_with_different_thinking_stays_apart():
+    q2 = short_feed()["questions"][1]
+    third = [w for w in q2["ways"] if w["level"] == "wrong" and w["sample"].endswith("1/3")]
+    assert {w["error"] for w in third} == {"MC-O", "MC-L"}
+
+
+def test_right_answer_wrong_reason_is_not_sound():
+    feed = short_feed()
+    rw = next(w for w in feed["questions"][1]["ways"] if w["sample"] == "head or tail\nso 1/2")
+    assert rw["level"] == "wrong" and rw["count"] == 3 and rw["think"].startswith("Right answer, wrong reason")
+
+
+def test_missing_fact_is_practice_not_a_probe():
+    feed = short_feed()
+    s27 = next(s for s in feed["students"] if s["student"] == "S27")
+    assert s27["summary"]["DECK"]["status"] == "gap"
+
+
+def test_student_owned_needs_get_a_card_not_teacher_time():
+    cid = new_class("probability-short")
+    upload(cid, "v1", sample_bytes("probability-short", "v1"))
+    for module in ("m3", "m4", "m5", "m6"):
+        assert run(cid, module).status_code == 200
+    feed = status(cid)["feeds"]
+    taught = {s["teacher_with"] for p in feed["m6"]["plan"]["periods"] for s in p["direct_teaching"]}
+    for group in feed["m5"]["groups"]:
+        assert (group["group_id"] in taught) == (group["delivery"] == "teacher")
+    assert all(g["group_id"] in feed["m6"]["plan"]["cards"] for g in feed["m5"]["groups"])
+
+
+def test_ai_insight_replaces_the_rule_wording_only_for_known_ways():
+    cid = new_class("probability-short")
+    upload(cid, "v1", sample_bytes("probability-short", "v1"))
+    run(cid, "m3")
+    tasks = client.get(f"{API}/classes/{cid}/m3-insight/tasks").json()["tasks"]
+    assert [t["id"] for t in tasks] == ["Q1", "Q2", "Q3"] and "NCERT Chapter 14" in tasks[0]["system"]
+    way = status(cid)["feeds"]["m3"]["questions"][0]["ways"][0]["id"]
+    feed = run(cid, "m3-insight", {"Q1": {"ways": {way: "They counted the kings.", "made-up": "x"}, "callout": "Most got it."}}, "ok").json()
+    q1 = feed["questions"][0]
+    assert q1["callout"] == "Most got it." and q1["ways"][0]["think"] == "They counted the kings."
+    assert status(cid)["stage"] == "identified"
+
+
+def test_short_check_runs_end_to_end_and_compares():
+    cid = through_v2("probability-short")
+    assert run(cid, "m8").status_code == 200
+    rows = {s["student"]: s for s in status(cid)["feeds"]["m8"]["comparison"]["students"]}
+    assert rows["S08"]["no_longer_seen"] and rows["S08"]["v2_percent"] == 100
+    assert "MC-A" in rows["S25"]["still_seen"]
+    assert status(cid)["feeds"]["m7-score"]["answers"]["S08"][0]["level"] == "secure"
+
