@@ -9,3 +9,7 @@ __pycache__/
 .venv/
 *.tsbuildinfo
 next-env.d.ts
+
+# Analysis and planning documents: kept local, never pushed
+AI_Decoder_Adaptive_Teaching_Engine_*
+probability_engine_handoff.zip

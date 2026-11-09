@@ -101,7 +101,7 @@ export default function AssessmentView() {
     setStage("sending");
     try {
       const scored = await scoreAll();
-      const r = await fetch(`${API}/submit`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name, grade, mcq, answers, scored }) });
+      const r = await fetch(`${API}/submit`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ class_id: new URLSearchParams(window.location.search).get("class") ?? "", student_id: new URLSearchParams(window.location.search).get("student") ?? "", name, grade, mcq, answers, scored }) });
       if (!r.ok) throw new Error("submit");
       const j = await r.json();
       setOid(j.id);

@@ -9,6 +9,7 @@ to this service (see `next.config.mjs`), so everything is reachable from one add
 - `demos/choices/` the coach landing page (start here)
 - `demos/livelife-home/` the three-button front page
 - `demos/livelife-student/` and `demos/livelife-teacher/` the assessments' small APIs and their static scorecard pages
+- `demos/adaptive-engine/` Modules 3 to 8 of the Adaptive Teaching Engine, run on the Habit 4 and Class 10 Probability packs (code in `adaptive_engine/`, one file per module; a chapter is added under `adaptive_engine/packs/`)
 - `demos/hello/` a minimal example
 
 ## Add your own demo

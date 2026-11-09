@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Adaptive Teaching Loop</title>
+<style>
+  :root { color-scheme: light dark; --ink: #1c2333; --muted: #5d6679; --line: #d9dee8; --bg: #f7f8fb; --card: #fff; --accent: #3f46d6; }
+  @media (prefers-color-scheme: dark) { :root { --ink: #e8ebf2; --muted: #a4adbf; --line: #343c4d; --bg: #151922; --card: #1e2430; --accent: #9ea4ff; } }
+  body { margin: 0; padding: 24px 16px 48px; background: var(--bg); color: var(--ink); font: 15px/1.5 system-ui, sans-serif; }
+  main { max-width: 1040px; margin: 0 auto; }
+  h1 { margin: 0 0 4px; font-size: 26px; } h2 { margin: 32px 0 4px; font-size: 18px; }
+  p.note { margin: 0 0 10px; color: var(--muted); }
+  .scroll { overflow-x: auto; background: var(--card); border: 1px solid var(--line); border-radius: 10px; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { padding: 9px 12px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+  tr:last-child td { border-bottom: 0; }
+  th { font-size: 12px; color: var(--muted); font-weight: 600; }
+  code { color: var(--accent); font: 600 13px ui-monospace, monospace; white-space: nowrap; }
+  a { color: var(--accent); }
+  .gap { color: var(--muted); font-style: italic; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Adaptive Teaching Loop</h1>
+  <p class="note" id="status" role="status">Running Modules 3 to 8&hellip;</p>
+  <p class="note"><a href="?pack=habit4">Habit 4: Think Win-Win</a> &middot; <a href="?pack=probability">Class 10 Probability</a></p>
+
+  <h2>Module 3: Misconception identification</h2>
+  <p class="note">Each finding is a hypothesis linked to evidence. Thin evidence triggers a probe, not a label.</p>
+  <div class="scroll"><table id="m3"></table></div>
+
+  <h2>Module 4 and 5: Interventions and temporary groups</h2>
+  <p class="note">Groups describe a need, and last only until the re-test. The teacher can move students or change the order.</p>
+  <div class="scroll"><table id="m5"></table></div>
+
+  <h2>Who owns each fix</h2>
+  <p class="note">Decided by the share of the class showing the misconception.</p>
+  <div class="scroll"><table id="owners"></table></div>
+
+  <h2>Module 6: Differentiated instruction plan</h2>
+  <p class="note">One teacher, one group at a time. Other groups work on supervised tasks with an answer key.</p>
+  <div class="scroll"><table id="m6"></table></div>
+
+  <h2>Module 7: Reassessment on a parallel item</h2>
+  <p class="note">New numbers, same competency. The results below come from a scripted synthetic re-test.</p>
+  <div class="scroll"><table id="m7"></table></div>
+
+  <h2>Module 8: Profile changes and next action</h2>
+  <p class="note">Evidence is added, never overwritten. Each row is a change recorded by the re-test.</p>
+  <div class="scroll"><table id="m8"></table></div>
+
+  <p class="note" id="audit" style="margin-top:20px"></p>
+</main>
+<script>
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const words = s => esc(String(s).replace(/_/g, " "));
+  const code = s => `<code>${esc(s)}</code>`;
+  const fill = (id, cols, rows) => {
+    document.getElementById(id).innerHTML = "<thead><tr>" + cols.map(c => `<th scope="col">${c}</th>`).join("") + "</tr></thead><tbody>" +
+      rows.map(r => "<tr>" + r.map(c => `<td>${c}</td>`).join("") + "</tr>").join("") + "</tbody>";
+  };
+
+  function nextStep(n) {
+    if (n.action === "group") return `Group ${code(n.target)}` + (n.held_for_later.length ? `; later ${esc(n.held_for_later.join(", "))}` : "");
+    if (n.action === "probe") return `Probe ${code(n.target)}`;
+    if (n.action === "practice") return `Practise ${esc(n.target.join(", "))}`;
+    return words(n.action);
+  }
+
+  function render(d) {
+    document.getElementById("status").textContent = d.note;
+    fill("m3", ["Student", "Evidence", "Next step", "For teacher"], d.students.map(s => [
+      esc(s.student),
+      Object.entries(s.summary).map(([c, v]) => `${code(c)} ${words(v.status)} (${esc(v.questions.join(", "))})`).join("<br>") || "Nothing to report",
+      nextStep(s.next), esc(s.teacher.join(", ")) || "None"]));
+
+    fill("m5", ["Need", "Intervention", "Competency", "Students", "Status"], d.groups.map(g => [
+      esc(g.need), `${code(g.intervention_id)}<br>${esc(d.plan.cards[g.group_id].title)}`, esc(g.competency_need_ids.join(", ")),
+      esc(g.student_ids.join(", ")), `${words(g.status)}; ${words(d.plan.cards[g.group_id].review_status)} content`]));
+
+    const size = d.class.class_size;
+    const remedy = (r, o) => !r.owners.includes(o) ? "" : r.remedies[o] ? esc(r.remedies[o]) : '<span class="gap">Awaiting expert draft</span>';
+    fill("owners", ["Misconception", "Students", "Student", "Teacher", "Content (us)"], d.class.misconceptions.map(r => [
+      `${code(r.code)}<br>${esc(r.name)}`, `${r.students.length} of ${size} (${r.share_percent}%)`, remedy(r, "student"), remedy(r, "teacher"), remedy(r, "content")]));
+
+    const need = Object.fromEntries(d.groups.map(g => [g.group_id, g.need]));
+    fill("m6", ["Period", "Minutes", "Teacher with", "Everyone else"], d.plan.periods.flatMap(p => [
+      [p.period, `0&ndash;${p.recap[1]}`, "Whole class recap", ""],
+      ...p.direct_teaching.map(s => [p.period, `${s.start}&ndash;${s.end}`, esc(need[s.teacher_with]), s.independent_practice.length ? "Supervised practice" : ""]),
+      [p.period, `${p.exit_ticket[0]}&ndash;${p.exit_ticket[1]}`, "Exit ticket for all", ""]]));
+
+    const outcome = Object.fromEntries(d.outcomes.map(o => [o.student, o]));
+    fill("m7", ["Student", "New item", "Answer", "Outcome", "Next step"], d.reassessment.map(r => [
+      esc(r.student), esc(r.item.text), esc(r.item.answer) || "Reasoned", words(outcome[r.student].outcome), words(outcome[r.student].next_step)]));
+
+    const changes = Object.values(d.profiles).flatMap(p => p.timeline.filter(t => t.session !== "diagnostic").map(t => [
+      esc(p.student_id), `${code(t.competency_id)} ${esc(p.competencies[t.competency_id].name)}`, `${words(t.from)} &rarr; ${words(t.to)}`, words(p.competencies[t.competency_id].next_action)]));
+    fill("m8", ["Student", "Competency", "Status change", "Next action"], changes.length ? changes : [["No status changed", "", "", ""]]);
+
+    document.getElementById("audit").textContent = `Audit trail: ${d.audit.length} recorded events.`;
+  }
+
+  fetch("api/demo-loop?pack=" + (new URLSearchParams(location.search).get("pack") === "habit4" ? "habit4" : "probability")).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); }).then(render)
+    .catch(() => { document.getElementById("status").textContent = "The loop could not be loaded. Is the demo service running?"; });
+</script>
+</body>
+</html>

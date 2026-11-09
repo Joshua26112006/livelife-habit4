@@ -39,6 +39,8 @@ from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
+from adaptive_engine.submissions import STORE as CLASS_SUBMISSIONS, valid_ids
+
 router = APIRouter()
 
 # ---------------------------------------------------------------------------------------------------------------
@@ -165,6 +167,8 @@ class ScoredIn(BaseModel):
 
 
 class SubmitIn(BaseModel):
+    class_id: str = Field(default="", max_length=40)     # optional: both ids also add this sheet to a class for the adaptive engine
+    student_id: str = Field(default="", max_length=40)
     name: str = Field(default="", max_length=40)
     grade: str = Field(default="", max_length=12)
     mcq: Dict[str, str] = Field(default_factory=dict, max_length=20)
@@ -314,6 +318,12 @@ def submit(body: SubmitIn):
         "mcq": {q["id"]: (body.mcq.get(q["id"]) or "").strip().upper()[:1] for q in MCQS},
         "created": datetime.now(timezone.utc).isoformat(),
     }
+    if valid_ids(body.class_id, body.student_id):
+        CLASS_SUBMISSIONS.add(body.class_id, body.student_id, {
+            "mcq": record["mcq"],
+            "answers": record["answers"],
+            "results": {k: r.model_dump() for k, r in (scored.results.items() if scored else []) if k in SCENARIO_IDS},
+        })
     return JSONResponse({"id": _remember(record)}, headers={"Cache-Control": "no-store"})
 
 
