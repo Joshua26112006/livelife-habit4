@@ -18,8 +18,11 @@ def _rank(pack, code, questions):
     return sorted(pack.intervention_map.get(code, ()), key=key)
 
 
-def _mapping(pack, diagnosis, code, allow_draft):
+def _mapping(pack, diagnosis, code, allow_draft, preferred):
     ranked = _rank(pack, code, diagnosis["summary"][code]["questions"])
+    if preferred.get(code) in ranked:
+        ranked.remove(preferred[code])
+        ranked.insert(0, preferred[code])
     usable = [i for i in ranked if allow_draft or pack.interventions[i]["review_status"] == "approved"]
     return {
         "misconception_id": code,
@@ -31,8 +34,9 @@ def _mapping(pack, diagnosis, code, allow_draft):
     }
 
 
-def map_student(pack, diagnosis, allow_draft=False):
+def map_student(pack, diagnosis, allow_draft=False, preferred=None):
     """One student's primary intervention for this session and the needs stored for later ones."""
+    preferred = preferred or {}
     step = diagnosis["next"]
     if step["action"] == "group":
         primary, later = step["target"], step["held_for_later"]
@@ -42,8 +46,8 @@ def map_student(pack, diagnosis, allow_draft=False):
         return {"student": diagnosis["student"], "primary": None, "secondary": []}
     return {
         "student": diagnosis["student"],
-        "primary": _mapping(pack, diagnosis, primary, allow_draft),
-        "secondary": [_mapping(pack, diagnosis, code, allow_draft) for code in later],
+        "primary": _mapping(pack, diagnosis, primary, allow_draft, preferred),
+        "secondary": [_mapping(pack, diagnosis, code, allow_draft, preferred) for code in later],
     }
 
 

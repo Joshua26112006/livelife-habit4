@@ -1,42 +1,52 @@
-"""Module 7: reassessment: a parallel item on the same competency, then an explicit reading of the result.
+"""Module 7: reassessment: a parallel V2 paper for the whole class, then V1 against V2.
 
-  demonstrated   correct with working
-  insufficient   correct, but no working: may be guessed
-  partial        set-up understood, a slip remains
-  persistent     a belief still shows on the new item
-  needs_review   blank, unreadable or matches nothing known
+The paper keeps the same competencies with new questions, so one paper can be printed for everyone. The comparison is
+descriptive: a change in score is evidence to look at, not proof that an intervention worked.
 """
-from .pack import NO_EVIDENCE_RESULTS, UNMAPPED
+from .pack import NO_EVIDENCE_RESULTS
 
-NEXT_STEP = {
-    "demonstrated": "leave_group",
-    "insufficient": "reasoning_probe",
-    "partial": "guided_practice_then_parallel_item",
-    "persistent": "return_to_intervention_with_teacher_review",
-    "needs_review": "teacher_review",
-}
+OPEN_STATUSES = ("confirmed", "likely", "candidate")
 
 
-def build_item(pack, diagnosis, target, attempt=1):
-    """A new item parallel to a question that showed this need, preferring one that samples the target competency."""
-    wanted = set(pack.misconceptions[target]["competency_ids"])
-    shown = [pack.item(q) for q in diagnosis["summary"][target]["questions"]]
-    original = next((item for item in shown if wanted & set(item["competency_ids"])), shown[0])
-    item = pack.parallel_item(original, attempt)
-    return {**item, "target": target, "student": diagnosis["student"]}
+def build_paper(pack, attempt=1):
+    return [pack.parallel_item(item, attempt) for item in pack.retest_items]
 
 
-def read_outcome(pack, item, raw):
-    """One reassessment response -> its trace, outcome and next step."""
-    trace = pack.read_answer(item, raw)
-    beliefs = [f["belief"] for f in trace["findings"]]
-    if trace["result"] in NO_EVIDENCE_RESULTS or UNMAPPED in beliefs:
-        outcome = "needs_review"
-    elif trace["result"].startswith("correct"):
-        outcome = "demonstrated" if trace["result"] == "correct" and trace.get("shows_working") else "insufficient"
-    elif any(code not in pack.slips for code in beliefs):
-        outcome = "persistent"
-    else:
-        outcome = "partial"
-    return {"student": item["student"], "item_id": item["id"], "target": item["target"], "parallel_of": item["parallel_of"],
-            "trace": trace, "outcome": outcome, "next_step": NEXT_STEP[outcome]}
+def _score(traces, question_ids):
+    judged = [t for t in traces if t["q"] in question_ids and t["result"] not in NO_EVIDENCE_RESULTS]
+    if not judged:
+        return None
+    return round(100 * sum(t["result"].startswith("correct") for t in judged) / len(judged))
+
+
+def _open_beliefs(diagnosis):
+    return {code for code, entry in diagnosis["summary"].items() if entry["status"] in OPEN_STATUSES}
+
+
+def compare_student(before, after, paper):
+    """One student's V1 and V2 on the same set of competencies."""
+    source_ids = {item["parallel_of"] for item in paper}
+    paper_ids = {item["id"] for item in paper}
+    v1, v2 = _open_beliefs(before), _open_beliefs(after)
+    return {
+        "student": before["student"],
+        "v1_percent": _score(before["traces"], source_ids),
+        "v2_percent": _score(after["traces"], paper_ids),
+        "no_longer_seen": sorted(v1 - v2),
+        "still_seen": sorted(v1 & v2),
+        "newly_seen": sorted(v2 - v1),
+        "next": after["next"],
+        "teacher": after["teacher"],
+    }
+
+
+def compare_class(pack, diagnoses, retests, paper):
+    """Per student and per misconception. A student who did not sit V2 is listed, not guessed at."""
+    students = [compare_student(diagnoses[s], retests[s], paper) for s in diagnoses if s in retests]
+    by_code = []
+    for code in pack.teaching_order:
+        v1 = sum(code in _open_beliefs(d) for s, d in diagnoses.items() if s in retests)
+        v2 = sum(code in _open_beliefs(d) for d in retests.values())
+        if v1 or v2:
+            by_code.append({"code": code, "name": pack.misconceptions[code]["name"], "v1_students": v1, "v2_students": v2})
+    return {"students": students, "misconceptions": by_code, "did_not_sit": [s for s in diagnoses if s not in retests]}

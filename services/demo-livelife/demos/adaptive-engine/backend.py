@@ -1,151 +1,158 @@
-"""Adaptive Teaching Engine API (demo). Mounted at /demo-livelife/adaptive-engine/api/.
+"""Adaptive Teaching Engine API. Mounted at /demo-livelife/adaptive-engine/api/.
 
-/demo-loop runs Modules 3 to 8 on synthetic sheets with a scripted synthetic re-test. /classes/<id> runs the planning modules on
-the Habit 4 sheets submitted with that class id, and returns statuses only, never answer text. The service is public with no
-sign-in, so use synthetic sheets until a real deployment adds accounts and storage. The rules are in ../../adaptive_engine.
+One class, one workflow: create, bulk upload, then one feed per module. This service holds the rules and the saved class. It has no
+API key: the site's /api/adaptive/<module> routes fetch a module's AI tasks from here, run them, and post the replies back, and
+ai_tasks.py validates every reply. A class id is long and random because there is no sign-in yet: synthetic data only until there is.
 
 NB: no `from __future__ import annotations` here (server.py loads this file without putting it in sys.modules, and pydantic
 then cannot resolve string annotations on the request models).
 """
-import json
 import re
-from pathlib import Path
-from typing import Dict, List
+import sqlite3
+from typing import Any, Dict, List
 
-from fastapi import APIRouter
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter, Request
+from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel, Field
 
-from adaptive_engine import ClassCycle, analyse_sheets
-from adaptive_engine.packs.habit4 import PACK as HABIT4, to_sheet
-from adaptive_engine.packs.probability import PACK as PROBABILITY, needs_expert_draft
-from adaptive_engine.submissions import CLASS_ID, STORE
+from adaptive_engine import bulk, samples, workflow as wf
+from adaptive_engine.packs import all_packs
 
 router = APIRouter()
 
 NO_STORE = {"Cache-Control": "no-store"}
-MAX_STUDENTS = 200
-MAX_ANSWER_CHARS = 2000
-QUESTION_IDS = {q["id"] for q in PROBABILITY.items}
-HERE = Path(__file__).parent
-DEMO_TEACHER = "demo-teacher"
+CLASS_ID = re.compile(r"^[A-Za-z0-9_-]{16,40}$")
+ROUNDS = ("v1", "v2")
 
 
-class Sheet(BaseModel):
-    id: str = Field(min_length=1, max_length=64)
-    answers: Dict[str, str]
+def _ok(body):
+    return JSONResponse(body, headers=NO_STORE)
 
 
-class AnalyseRequest(BaseModel):
-    students: List[Sheet] = Field(min_length=1, max_length=MAX_STUDENTS)
+def _error(message, status):
+    return JSONResponse({"error": message}, status_code=status, headers=NO_STORE)
 
 
-@router.get("/test")
-def test_paper():
-    """The Probability question paper and the remedies still waiting for an expert draft."""
-    return {
-        "questions": [{"id": q["id"], "text": q["text"], "type": q["type"], "competency_ids": q["competency_ids"]} for q in PROBABILITY.items],
-        "awaiting_expert_draft": needs_expert_draft(),
-    }
+def _with_class(class_id, action):
+    """Load the class and run one step, turning expected failures into plain messages."""
+    workflow = wf.load(class_id) if CLASS_ID.match(class_id) else None
+    if workflow is None:
+        return _error("Class not found.", 404)
+    try:
+        return _ok(action(workflow))
+    except (wf.WorkflowError, bulk.UploadError, ValueError, KeyError, StopIteration, sqlite3.IntegrityError) as err:
+        return _error(str(err) or "That step could not be completed.", 409)
 
 
-@router.post("/analyse")
-def analyse(request: AnalyseRequest):
-    for sheet in request.students:
-        for qid, text in sheet.answers.items():
-            if qid not in QUESTION_IDS:
-                return JSONResponse({"error": "unknown_question", "question": qid[:16]}, status_code=400, headers=NO_STORE)
-            if len(text) > MAX_ANSWER_CHARS:
-                return JSONResponse({"error": "answer_too_long", "question": qid}, status_code=400, headers=NO_STORE)
-    return JSONResponse(analyse_sheets(PROBABILITY, [s.model_dump() for s in request.students]), headers=NO_STORE)
+class NewClass(BaseModel):
+    pack: str
+    name: str = Field(min_length=1, max_length=60)
 
 
-def _scripted_probability_answer(item, outcome):
-    """A synthetic re-test answer that produces the named outcome."""
-    if item["type"] == "argue":
-        parts = re.search(r"has (\d+) equal", item["text"])[1]
-        return f"No. {parts} equal parts, so count the parts, not the colours"
-    correct = item["correct"]
-    if outcome == "demonstrated":
-        return f"favourable outcomes over all outcomes: {correct.numerator * 2}/{correct.denominator * 2} = {correct}"
-    if outcome == "insufficient":
-        return str(correct)
-    if outcome == "partial":
-        return f"{correct.numerator}/{correct.denominator} = 1/{correct.denominator + 97}"
-    predicted = next(s for s in item["signatures"] if s["belief"] == item["target"] and "value" in s)["value"]
-    return f"I think it is {predicted}"
+class ModuleRun(BaseModel):
+    results: Dict[str, Any] = Field(default_factory=dict)
+    status: str = Field(default="off", max_length=12)
 
 
-# The one thing scripted: how each sample student does on the re-test. All other results are computed.
-PROBABILITY_RETEST = {"P02": "demonstrated", "P03": "partial", "P04": "persistent", "P05": "insufficient", "P06": "demonstrated"}
-HABIT4_RETEST = {"H02": 4, "H03": 2, "H04": 1, "H05": 3, "H06": 4}
+class Probe(BaseModel):
+    student: str = Field(max_length=40)
+    code: str = Field(max_length=30)
+    outcome: str = Field(max_length=12)
+    teacher: str = Field(default="teacher", max_length=40)
 
 
-def _habit4_sheets():
-    """Fill the sample's differences out into full synthetic sheets."""
-    sheets = []
-    for student in json.loads((HERE / "sample_habit4.json").read_text())["students"]:
-        mcq = {i["id"]: i["key"] for i in HABIT4.items if i["type"] == "mcq"}
-        mcq.update(student.get("mcq", {}))
-        ids = [i["id"] for i in HABIT4.items if i["type"] == "scenario"]
-        scores = {s: student.get("scores", {}).get(s, 4) for s in ids}
-        flagged = student.get("flagged", [])
-        sheets.append(to_sheet(student["id"], {
-            "mcq": mcq,
-            "answers": {s: "Synthetic written answer." for s in ids},
-            "results": {s: {"score": scores[s], "evidence": f"Synthetic evidence at rubric level {scores[s]}.", "flag": s in flagged} for s in ids},
-        }))
-    return sheets
+class Move(BaseModel):
+    student: str = Field(max_length=40)
+    from_group: str = Field(max_length=60)
+    to_group: str = Field(max_length=60)
+    teacher: str = Field(default="teacher", max_length=40)
+    rationale: str = Field(default="", max_length=300)
 
 
-def _run_loop(pack, sheets, probes, answer_for):
-    cycle = ClassCycle(pack, "demo-class", allow_draft=True)
-    cycle.run_diagnostic(sheets)
-    for student, code in probes:
-        cycle.record_probe(student, code, "supports", DEMO_TEACHER)
-    plan = cycle.build_plan()
-    cycle.approve_plan(DEMO_TEACHER)
-    items = cycle.create_reassessment()
-    cycle.submit_reassessment({s: answer_for(s, i) for s, i in items.items()})
-    return JSONResponse({
-        "note": "Synthetic sheets and a scripted synthetic re-test. Every intervention is an unreviewed draft.",
-        "pack": pack.chapter_id,
-        "class": cycle.class_view(),
-        "students": list(cycle.diagnoses.values()),
-        "groups": cycle.groups,
-        "plan": plan,
-        "reassessment": [{"student": s, "item": {"id": i["id"], "text": i["text"], "answer": str(i.get("correct", "")),
-                                                  "parallel_of": i["parallel_of"]}} for s, i in items.items()],
-        "outcomes": [{k: r[k] for k in ("student", "target", "outcome", "next_step")} for r in cycle.outcomes],
-        "next_cycle": cycle.next_cycle(),
-        "profiles": {s: p.view() for s, p in cycle.profiles.items()},
-        "audit": cycle.audit,
-    }, headers=NO_STORE)
+class Priority(BaseModel):
+    group_ids: List[str] = Field(max_length=100)
+    teacher: str = Field(default="teacher", max_length=40)
 
 
-@router.get("/demo-loop")
-def demo_loop(pack: str = "probability"):
-    """Modules 3 to 8 on synthetic sheets. Drafts are allowed here because no expert has signed them off yet."""
-    if pack == "habit4":
-        retest = lambda s, _: {"text": "Synthetic re-test answer.", "score": HABIT4_RETEST[s], "evidence": "", "flag": False}
-        return _run_loop(HABIT4, _habit4_sheets(), [("H06", "WW-VAGUE")], retest)
-    if pack == "probability":
-        sheets = json.loads((HERE / "sample_sheets.json").read_text())["students"]
-        return _run_loop(PROBABILITY, sheets, [("P06", "MC-L")], lambda s, i: _scripted_probability_answer(i, PROBABILITY_RETEST[s]))
-    return JSONResponse({"error": "unknown_pack"}, status_code=404, headers=NO_STORE)
+class Approve(BaseModel):
+    teacher: str = Field(default="teacher", max_length=40)
+
+
+@router.get("/subjects")
+def subjects():
+    """Every registered subject pack and its map: competencies, misconceptions, questions and review state."""
+    return _ok({key: pack.describe() for key, pack in all_packs().items()})
+
+
+@router.post("/classes")
+def create_class(body: NewClass):
+    try:
+        return _ok({"class_id": wf.create(body.pack, body.name.strip()).class_id})
+    except wf.WorkflowError as err:
+        return _error(str(err), 400)
 
 
 @router.get("/classes/{class_id}")
-def class_plan(class_id: str):
-    """Modules 3 to 6 for the Habit 4 sheets submitted with this class id. Statuses only: no answer text or evidence lines."""
-    submissions = STORE.latest(class_id) if CLASS_ID.match(class_id) else []
-    if not submissions:
-        return JSONResponse({"detail": "Not found"}, status_code=404, headers=NO_STORE)
-    cycle = ClassCycle(HABIT4, class_id, allow_draft=True)
-    cycle.run_diagnostic([to_sheet(student, submission) for student, submission in submissions])
-    return JSONResponse({
-        "class": cycle.class_view(),
-        "students": [{"student": d["student"], "next": d["next"], "teacher": d["teacher"], "summary": d["summary"]} for d in cycle.diagnoses.values()],
-        "groups": cycle.groups,
-        "plan": cycle.build_plan(),
-    }, headers=NO_STORE)
+def class_status(class_id: str):
+    return _with_class(class_id, lambda w: w.status())
+
+
+@router.post("/classes/{class_id}/upload/{round_name}")
+async def upload(class_id: str, round_name: str, request: Request, filename: str = "answers.csv"):
+    if round_name not in ROUNDS:
+        return _error("Unknown round.", 404)
+    data = await request.body()
+    return _with_class(class_id, lambda w: w.upload(round_name, data, filename))
+
+
+@router.get("/classes/{class_id}/{module}/tasks")
+def module_tasks(class_id: str, module: str):
+    if module not in wf.MODULES:
+        return _error("Unknown module.", 404)
+    return _with_class(class_id, lambda w: {"tasks": w.tasks(module)})
+
+
+@router.post("/classes/{class_id}/{module}/run")
+def module_run(class_id: str, module: str, body: ModuleRun):
+    if module not in wf.MODULES:
+        return _error("Unknown module.", 404)
+    return _with_class(class_id, lambda w: w.run(module, body.results, body.status))
+
+
+def _teacher_step(class_id, stage, kind, payload):
+    def step(w):
+        w._need(stage)
+        w.record(kind, payload)
+        return w.status()
+    return _with_class(class_id, step)
+
+
+@router.post("/classes/{class_id}/probes")
+def probe(class_id: str, body: Probe):
+    return _teacher_step(class_id, "identified", "probe", body.model_dump())
+
+
+@router.post("/classes/{class_id}/groups/move")
+def move(class_id: str, body: Move):
+    return _teacher_step(class_id, "grouped", "move", body.model_dump())
+
+
+@router.post("/classes/{class_id}/groups/priority")
+def priority(class_id: str, body: Priority):
+    return _teacher_step(class_id, "grouped", "priority", body.model_dump())
+
+
+@router.post("/classes/{class_id}/plan/approve")
+def approve(class_id: str, body: Approve):
+    return _teacher_step(class_id, "planned", "approve", body.model_dump())
+
+
+@router.get("/files/{pack}/{round_name}")
+def files(pack: str, round_name: str, sample: bool = False):
+    """A blank template, or a synthetic sample, for one paper."""
+    chapter = all_packs().get(pack)
+    if chapter is None or round_name not in ROUNDS or (sample and chapter.sample is None):
+        return _error("Unknown file.", 404)
+    text = chapter.sample(chapter, round_name) if sample else samples.template(chapter, round_name)
+    name = f"{pack}-{round_name}-{'sample' if sample else 'template'}.csv"
+    return Response(text, media_type="text/csv", headers={"Content-Disposition": f'attachment; filename="{name}"', **NO_STORE})

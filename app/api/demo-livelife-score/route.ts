@@ -1,10 +1,8 @@
 import {
   KEYS,
-  capFromFound,
   MAX_ANSWER_CHARS,
-  S7_CAP_AT,
-  S7_CAP_NOTE,
   isKey,
+  markScenario,
   systemPrompt,
   type ScenarioKey,
 } from "@/lib/livelifeDemo/rubrics";
@@ -166,32 +164,7 @@ export async function POST(req: Request) {
     const modelResults = (typeof parsed.results === "object" && parsed.results !== null ? parsed.results : {}) as Record<string, Record<string, unknown>>;
     if (Object.keys(modelResults).length === 0) throw new Error("no results");
 
-    for (const k of toScore as ScenarioKey[]) {
-      const r = modelResults[k];
-      const n = Number(r?.score);
-      if (!r || r.score === null || r.score === undefined || !Number.isFinite(n)) {
-        results[k] = { score: null, evidence: "", tip: "", flag: false };
-        continue;
-      }
-      let score = Math.min(4, Math.max(0, Math.round(n)));
-      // The marker listed the rubric parts it found written down; the score may not exceed what they allow.
-      const cap = capFromFound(k, r.found);
-      if (cap !== null && score > cap) score = cap;
-      let tip = clean(r.tip, 150);
-      let flag = r.flag === true && score === 0; // a flag only ever goes with a real 0
-
-      if (k === "S7") {
-        if (r.consequence === "harmful") {
-          score = 0;
-          flag = true;
-        } else if (r.consequence === "punitive" && score > S7_CAP_AT) {
-          // a punitive or unrelated consequence caps the item at 2 with a gentle note.
-          score = S7_CAP_AT;
-          tip = (tip ? tip + " " : "") + S7_CAP_NOTE;
-        }
-      }
-      results[k] = { score, evidence: clean(r.evidence, 200), tip, flag };
-    }
+    for (const k of toScore as ScenarioKey[]) results[k] = markScenario(k, modelResults[k]);
 
     // The summary is optional: the page falls back to its own lines if it is missing or malformed.
     let summary: { strengths: string[]; skills: string[]; try_next: string; teacher_support: string } | null = null;

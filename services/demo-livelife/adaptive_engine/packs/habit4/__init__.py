@@ -11,6 +11,7 @@ import importlib.util
 from pathlib import Path
 
 from ...pack import UNMAPPED, ChapterPack
+from .samples import sample
 from .knowledge_base import (DISTRACTORS, INTERVENTION_MAP, INTERVENTIONS, LEVEL_ONE_PATTERNS, MISCONCEPTIONS, PARALLEL_SCENARIOS,
                              PROBES, SEPARATING_PROBES, TEACHING_ORDER, VERSION)
 
@@ -117,6 +118,15 @@ PACK = ChapterPack(
     intervention_map=INTERVENTION_MAP,
     read_answer=read_answer,
     parallel_item=parallel_item,
+    retest_types=("scenario",),
+    written_type="scenario",
+    rubric_key=lambda item: item["competency_ids"][0],
+    sample=sample,
+    subject={"subject": "Life Skills", "board": "LiveLife Education", "grade": "Level 5", "chapter": "Habit 4: Think Win-Win", "source": "Discovering the Leader in Me"},
+    brief=("LiveLife Education, Discovering the Leader in Me, Level 5, Habit 4: Think Win-Win, students aged 11 to 16. Keep to its three mindsets, courage and "
+           "consideration, the Emotional Bank Account as a metaphor, promises, and the five-part Win-Win Agreement. Win-Win does not mean both people get their first choice."),
+    upload_hint="K1 to K9: the option letter. S1 to S8: the student's own written answer.",
+    extension_task="Draft a Win-Win Agreement for a real situation in your class, then check it for all five parts.",
 )
 
 __all__ = ["PACK", "to_sheet"]

@@ -51,6 +51,20 @@ def build_groups(pack, mappings, max_group_size=DEFAULT_MAX_GROUP_SIZE):
     return groups
 
 
+def build_cohorts(pack, diagnoses, grouped_students):
+    """Students with no teaching group this session still have something to do."""
+    cohorts = {
+        "extension": {"cohort_id": "extension", "need": "Ready for extension", "task": pack.extension_task, "student_ids": []},
+        "probe": {"cohort_id": "probe", "need": "One follow-up question first", "task": "Answer the follow-up question in writing.", "student_ids": []},
+        "teacher_review": {"cohort_id": "teacher_review", "need": "Teacher to read the answers first", "task": "Teacher checks in during independent work.", "student_ids": []},
+    }
+    for diagnosis in diagnoses:
+        action = diagnosis["next"]["action"]
+        if diagnosis["student"] not in grouped_students and action in cohorts:
+            cohorts[action]["student_ids"].append(diagnosis["student"])
+    return [c for c in cohorts.values() if c["student_ids"]]
+
+
 def _misconception_rows(pack, students):
     size = len(students)
     rows = []

@@ -1,7 +1,6 @@
 """One class through Modules 3 to 8, with the teacher's controls and an audit trail.
 
-Stages keep explicit contracts; this class only sequences them and records every recommendation and human decision. Storage
-is left to the host platform: nothing here touches a database.
+Stages keep explicit contracts; this class only sequences them and records every recommendation and human decision.
 """
 from datetime import datetime, timezone
 
@@ -10,6 +9,7 @@ from .profile import LearnerProfile
 
 TEACHER_ACTIONS = ("accept", "edit", "override", "dismiss")
 DIAGNOSTIC = "diagnostic"
+RETEST = "v2"
 
 
 class ClassCycle:
@@ -19,18 +19,27 @@ class ClassCycle:
         self.allow_draft = allow_draft
         self.max_group_size = max_group_size
         self.diagnoses, self.profiles = {}, {}
-        self.mappings, self.groups, self.plan, self.reassessment_items, self.outcomes = [], [], None, {}, []
+        self.mappings, self.groups, self.cohorts, self.plan = [], [], [], None
+        self.preferred = {}
+        self.paper, self.retests, self.comparison = [], {}, None
         self.audit = []
+        self.clock = lambda: datetime.now(timezone.utc).isoformat()
 
     def _log(self, event, actor="system", **details):
-        self.audit.append({"at": datetime.now(timezone.utc).isoformat(), "event": event, "actor": actor,
-                           "class_id": self.class_id, "pack_version": self.pack.version, **details})
+        self.audit.append({"at": self.clock(), "event": event, "actor": actor, "class_id": self.class_id,
+                           "pack_version": self.pack.version, **details})
 
     def _refresh(self):
-        self.mappings = [interventions.map_student(self.pack, d, self.allow_draft) for d in self.diagnoses.values()]
+        diagnoses = list(self.diagnoses.values())
+        self.mappings = [interventions.map_student(self.pack, d, self.allow_draft, self.preferred) for d in diagnoses]
         self.groups = clustering.build_groups(self.pack, self.mappings, self.max_group_size)
+        self._set_cohorts()
         self.plan = None
         self._log("groups_proposed", groups=[g["group_id"] for g in self.groups])
+
+    def _set_cohorts(self):
+        grouped = {s for g in self.groups for s in g["student_ids"]}
+        self.cohorts = clustering.build_cohorts(self.pack, self.diagnoses.values(), grouped)
 
     # Module 3
     def run_diagnostic(self, sheets):
@@ -50,7 +59,12 @@ class ClassCycle:
     def class_view(self):
         return clustering.diagnose_class(self.pack, list(self.diagnoses.values()))
 
-    # Modules 4 and 5: the teacher's edits
+    # Module 4
+    def set_preferred(self, preferred):
+        self.preferred = dict(preferred)
+        self._refresh()
+
+    # Module 5: the teacher's edits
     def _group(self, group_id):
         return next(g for g in self.groups if g["group_id"] == group_id)
 
@@ -78,12 +92,17 @@ class ClassCycle:
 
     # Module 6
     def _evidence_item_for(self, group):
-        first = group["student_ids"][0]
-        return self.diagnoses[first]["summary"][group["misconception_id"]]["questions"][0]
+        for student in group["student_ids"]:
+            entry = self.diagnoses[student]["summary"].get(group["misconception_id"])
+            if entry:
+                return entry["questions"][0]
+        # Every member was moved here by the teacher: practise on any question that samples this need.
+        wanted = set(group["competency_need_ids"])
+        return next((i["id"] for i in self.pack.items if wanted & set(i["competency_ids"])), self.pack.items[0]["id"])
 
     def build_plan(self, period_minutes=orchestration.DEFAULT_PERIOD_MINUTES):
         evidence = {g["group_id"]: self._evidence_item_for(g) for g in self.groups}
-        self.plan = orchestration.plan_sessions(self.pack, self.groups, evidence, period_minutes)
+        self.plan = orchestration.plan_sessions(self.pack, self.groups, evidence, period_minutes, self.cohorts)
         self._log("plan_recommended", periods=len(self.plan["periods"]))
         return self.plan
 
@@ -95,38 +114,25 @@ class ClassCycle:
         for group in self.groups:
             group["status"] = "approved"
             for student in group["student_ids"]:
-                self.profiles[student].record_intervention(
-                    DIAGNOSTIC, group["intervention_id"], group["competency_need_ids"], teacher)
+                self.profiles[student].record_intervention(DIAGNOSTIC, group["intervention_id"], group["competency_need_ids"], teacher)
         self._log("plan_approved", teacher)
 
     # Module 7
-    def create_reassessment(self, attempt=1):
+    def create_paper(self, attempt=1):
         if not self.plan or self.plan["status"] != "approved":
             raise ValueError("approve the plan before reassessing")
-        self.reassessment_items = {}
-        for group in self.groups:
-            for student in group["student_ids"]:
-                self.reassessment_items[student] = reassessment.build_item(
-                    self.pack, self.diagnoses[student], group["misconception_id"], attempt)
-        self._log("reassessment_created", attempt=attempt, students=len(self.reassessment_items))
-        return self.reassessment_items
+        self.paper = reassessment.build_paper(self.pack, attempt)
+        self._log("v2_paper_created", attempt=attempt, items=len(self.paper))
+        return self.paper
 
-    # Modules 7 and 8
-    def submit_reassessment(self, answers, session="reassessment-1"):
-        """answers: {student: raw text}. Each result is added to that student's profile as new evidence."""
-        results = []
-        for student, raw in answers.items():
-            item = self.reassessment_items[student]
-            result = reassessment.read_outcome(self.pack, item, raw)
-            self.profiles[student].add_traces(session, [result["trace"]], [item])
-            results.append(result)
-        self.outcomes.extend(results)
-        self._log("reassessment_scored", session=session, students=len(results))
-        return results
-
-    def next_cycle(self):
-        """Who leaves their group, and who needs another pass."""
-        by_step = {}
-        for result in self.outcomes:
-            by_step.setdefault(result["next_step"], []).append(result["student"])
-        return by_step
+    def score_paper(self, sheets):
+        """V2 sheets -> new evidence on each profile and the V1 against V2 comparison."""
+        for sheet in sheets:
+            if sheet["id"] not in self.diagnoses:
+                continue
+            diagnosis = identification.diagnose_student(self.pack, sheet, self.paper)
+            self.retests[sheet["id"]] = diagnosis
+            self.profiles[sheet["id"]].add_traces(RETEST, diagnosis["traces"], self.paper)
+        self.comparison = reassessment.compare_class(self.pack, self.diagnoses, self.retests, self.paper)
+        self._log("v2_scored", students=len(self.retests))
+        return self.comparison

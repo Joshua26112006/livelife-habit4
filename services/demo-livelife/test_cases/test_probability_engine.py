@@ -17,7 +17,6 @@ from adaptive_engine.identification import diagnose_student  # noqa: E402
 from adaptive_engine.packs.probability import PACK  # noqa: E402
 from adaptive_engine.packs.probability.reader import read_answer, read_values  # noqa: E402
 
-API = "/demo-livelife/adaptive-engine/api"
 SHEETS = json.loads((ROOT / "demos/adaptive-engine/sample_sheets.json").read_text())["students"]
 TEST = PACK.items
 Q = {q["id"]: q for q in TEST}
@@ -179,28 +178,6 @@ def test_undrafted_remedy_is_flagged_when_content_owns_it():
     rows = {row["code"]: row for row in analyse_sheets(p05_alone)["class"]["misconceptions"]}
     assert rows["MC-U"]["awaiting_expert_draft"] == ["content"]
     assert rows["MC-U"]["remedies"]["content"] is None
-
-
-def test_api_analyses_and_does_not_cache():
-    res = client.post(f"{API}/analyse", json={"students": SHEETS})
-    assert res.status_code == 200 and res.headers["cache-control"] == "no-store"
-    assert res.json()["class"]["class_size"] == 6
-
-
-def test_api_lists_the_paper_and_open_drafts():
-    body = client.get(f"{API}/test").json()
-    assert len(body["questions"]) == 10
-    assert body["awaiting_expert_draft"]["MC-R"] == ["content"]
-
-
-@pytest.mark.parametrize("payload, status", [
-    ({"students": []}, 422),
-    ({"students": [{"id": "X", "answers": {"T99": "1/2"}}]}, 400),
-    ({"students": [{"id": "X", "answers": {"T1": "1" * 2001}}]}, 400),
-    ({"students": [{"id": f"S{i}", "answers": {}} for i in range(201)]}, 422),
-])
-def test_api_rejects_bad_input(payload, status):
-    assert client.post(f"{API}/analyse", json=payload).status_code == status
 
 
 def test_engine_source_is_not_served():

@@ -3,107 +3,224 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Adaptive Teaching Loop</title>
+<title>Adaptive Teaching Engine</title>
 <style>
-  :root { color-scheme: light dark; --ink: #1c2333; --muted: #5d6679; --line: #d9dee8; --bg: #f7f8fb; --card: #fff; --accent: #3f46d6; }
-  @media (prefers-color-scheme: dark) { :root { --ink: #e8ebf2; --muted: #a4adbf; --line: #343c4d; --bg: #151922; --card: #1e2430; --accent: #9ea4ff; } }
-  body { margin: 0; padding: 24px 16px 48px; background: var(--bg); color: var(--ink); font: 15px/1.5 system-ui, sans-serif; }
+  :root { color-scheme: light dark; --ink: #1c2333; --muted: #5d6679; --line: #d9dee8; --bg: #f5f6fa; --card: #fff; --accent: #3f46d6; --on-accent: #fff; --soft: #eceefb; --good: #17694a; --warn: #8a5a00; --bad: #a32929; }
+  @media (prefers-color-scheme: dark) { :root { --ink: #e8ebf2; --muted: #a4adbf; --line: #343c4d; --bg: #12151d; --card: #1c212c; --accent: #a4a9ff; --on-accent: #12151d; --soft: #2a2f4a; --good: #6fd3a8; --warn: #f0c060; --bad: #ff9c9c; } }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 24px 16px 64px; background: var(--bg); color: var(--ink); font: 15px/1.5 system-ui, sans-serif; }
   main { max-width: 1040px; margin: 0 auto; }
-  h1 { margin: 0 0 4px; font-size: 26px; } h2 { margin: 32px 0 4px; font-size: 18px; }
-  p.note { margin: 0 0 10px; color: var(--muted); }
-  .scroll { overflow-x: auto; background: var(--card); border: 1px solid var(--line); border-radius: 10px; }
+  h1 { margin: 0; font-size: 26px; } h2 { margin: 0; font-size: 18px; } h3 { margin: 16px 0 6px; font-size: 14px; }
+  p { margin: 4px 0; } .muted { color: var(--muted); } .small { font-size: 13px; }
+  .steps { display: flex; flex-wrap: wrap; gap: 6px; margin: 14px 0 20px; padding: 0; list-style: none; }
+  .steps li { padding: 4px 10px; border-radius: 999px; font-size: 12.5px; background: var(--card); border: 1px solid var(--line); color: var(--muted); }
+  .steps li.done { color: var(--good); } .steps li.now { background: var(--accent); color: var(--on-accent); border-color: var(--accent); font-weight: 600; }
+  section { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 18px; margin-bottom: 14px; }
+  section.locked { opacity: .55; }
+  .head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
+  .row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 10px; }
+  button, .btn { font: inherit; padding: 7px 14px; border-radius: 8px; border: 1px solid var(--accent); background: var(--accent); color: var(--on-accent); cursor: pointer; text-decoration: none; display: inline-block; }
+  button.ghost, .btn.ghost { background: transparent; color: var(--accent); }
+  button.tiny { padding: 2px 8px; font-size: 12.5px; }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+  input[type=text], select { font: inherit; padding: 6px 9px; border-radius: 8px; border: 1px solid var(--line); background: var(--card); color: var(--ink); }
+  .scroll { overflow-x: auto; margin-top: 8px; border: 1px solid var(--line); border-radius: 8px; }
   table { width: 100%; border-collapse: collapse; }
-  th, td { padding: 9px 12px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
-  tr:last-child td { border-bottom: 0; }
-  th { font-size: 12px; color: var(--muted); font-weight: 600; }
-  code { color: var(--accent); font: 600 13px ui-monospace, monospace; white-space: nowrap; }
-  a { color: var(--accent); }
-  .gap { color: var(--muted); font-style: italic; }
+  th, td { padding: 8px 10px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; font-size: 14px; }
+  tr:last-child td { border-bottom: 0; } th { font-size: 12px; color: var(--muted); font-weight: 600; }
+  code { color: var(--accent); font: 600 12.5px ui-monospace, monospace; }
+  .chip { font-size: 12px; padding: 2px 9px; border-radius: 999px; background: var(--soft); white-space: nowrap; }
+  .chip.ok { color: var(--good); } .chip.warn { color: var(--warn); } .chip.bad { color: var(--bad); }
+  details { margin-top: 6px; } summary { cursor: pointer; color: var(--accent); font-size: 13.5px; }
+  ul.tight { margin: 4px 0; padding-left: 18px; }
+  #busy { position: sticky; top: 8px; z-index: 5; display: none; padding: 9px 14px; border-radius: 8px; background: var(--accent); color: var(--on-accent); margin-bottom: 12px; }
+  #error { display: none; padding: 9px 14px; border-radius: 8px; border: 1px solid var(--bad); color: var(--bad); margin-bottom: 12px; }
 </style>
 </head>
 <body>
 <main>
-  <h1>Adaptive Teaching Loop</h1>
-  <p class="note" id="status" role="status">Running Modules 3 to 8&hellip;</p>
-  <p class="note"><a href="?pack=habit4">Habit 4: Think Win-Win</a> &middot; <a href="?pack=probability">Class 10 Probability</a></p>
-
-  <h2>Module 3: Misconception identification</h2>
-  <p class="note">Each finding is a hypothesis linked to evidence. Thin evidence triggers a probe, not a label.</p>
-  <div class="scroll"><table id="m3"></table></div>
-
-  <h2>Module 4 and 5: Interventions and temporary groups</h2>
-  <p class="note">Groups describe a need, and last only until the re-test. The teacher can move students or change the order.</p>
-  <div class="scroll"><table id="m5"></table></div>
-
-  <h2>Who owns each fix</h2>
-  <p class="note">Decided by the share of the class showing the misconception.</p>
-  <div class="scroll"><table id="owners"></table></div>
-
-  <h2>Module 6: Differentiated instruction plan</h2>
-  <p class="note">One teacher, one group at a time. Other groups work on supervised tasks with an answer key.</p>
-  <div class="scroll"><table id="m6"></table></div>
-
-  <h2>Module 7: Reassessment on a parallel item</h2>
-  <p class="note">New numbers, same competency. The results below come from a scripted synthetic re-test.</p>
-  <div class="scroll"><table id="m7"></table></div>
-
-  <h2>Module 8: Profile changes and next action</h2>
-  <p class="note">Evidence is added, never overwritten. Each row is a change recorded by the re-test.</p>
-  <div class="scroll"><table id="m8"></table></div>
-
-  <p class="note" id="audit" style="margin-top:20px"></p>
+  <h1>Adaptive Teaching Engine</h1>
+  <p class="muted" id="title">Upload a class's answers, analyse each student, teach, re-test, compare.</p>
+  <nav><ul class="steps" id="steps"></ul></nav>
+  <div id="busy" role="status"></div>
+  <div id="error" role="alert"></div>
+  <div id="app"></div>
 </main>
 <script>
-  const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-  const words = s => esc(String(s).replace(/_/g, " "));
-  const code = s => `<code>${esc(s)}</code>`;
-  const fill = (id, cols, rows) => {
-    document.getElementById(id).innerHTML = "<thead><tr>" + cols.map(c => `<th scope="col">${c}</th>`).join("") + "</tr></thead><tbody>" +
-      rows.map(r => "<tr>" + r.map(c => `<td>${c}</td>`).join("") + "</tr>").join("") + "</tbody>";
-  };
+const API = "api";
+const ORDER = ["created","uploaded","identified","mapped","grouped","planned","approved","paper_ready","v2_uploaded","scored","profiled"];
+const NAV = [["Upload","uploaded"],["3 Identify","identified"],["4 Interventions","mapped"],["5 Groups","grouped"],["6 Plan","planned"],["Approve","approved"],["7 V2 paper","paper_ready"],["V2 upload","v2_uploaded"],["7 Compare","scored"],["8 Profiles","profiled"]];
+let C = null, SUBJECTS = {};
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+const words = s => esc(String(s ?? "").replace(/[_-]/g, " "));
+const code = s => `<code>${esc(s)}</code>`;
+const reached = stage => C && ORDER.indexOf(C.stage) >= ORDER.indexOf(stage);
+const table = (cols, rows) => `<div class="scroll"><table><thead><tr>${cols.map(c => `<th scope="col">${c}</th>`).join("")}</tr></thead><tbody>${rows.map(r => `<tr>${r.map(c => `<td>${c}</td>`).join("")}</tr>`).join("") || `<tr><td colspan="${cols.length}" class="muted">Nothing here.</td></tr>`}</tbody></table></div>`;
+const AI = { ok: ["ok","AI applied"], partial: ["warn","AI partly applied"], failed: ["bad","AI failed: rules only"], off: ["warn","AI off: rules only"] };
+const chip = s => s ? `<span class="chip ${AI[s]?.[0] ?? ""}">${AI[s]?.[1] ?? esc(s)}</span>` : "";
 
-  function nextStep(n) {
-    if (n.action === "group") return `Group ${code(n.target)}` + (n.held_for_later.length ? `; later ${esc(n.held_for_later.join(", "))}` : "");
-    if (n.action === "probe") return `Probe ${code(n.target)}`;
-    if (n.action === "practice") return `Practise ${esc(n.target.join(", "))}`;
-    return words(n.action);
+async function call(path, options) {
+  const res = await fetch(path, options);
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(body.error || "That step failed. Is the service running?");
+  return body;
+}
+async function step(message, fn) {
+  $("error").style.display = "none"; $("busy").textContent = message; $("busy").style.display = "block";
+  document.querySelectorAll("button").forEach(b => b.disabled = true);
+  try { await fn(); await refresh(); }
+  catch (e) { $("error").textContent = e.message; $("error").style.display = "block"; render(); }
+  finally { $("busy").style.display = "none"; }
+}
+const post = (path, body) => call(`${API}/classes/${C.class_id}/${path}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+async function refresh() {
+  if (C) C = await call(`${API}/classes/${C.class_id}`);
+  render();
+}
+async function createClass() {
+  const pack = $("pack").value, name = $("name").value.trim() || "My class";
+  await step("Creating the class…", async () => {
+    const made = await call(`${API}/classes`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ pack, name }) });
+    C = { class_id: made.class_id };
+    history.replaceState(null, "", `?class=${made.class_id}`);
+  });
+}
+async function uploadBytes(round, body, filename) {
+  await step("Reading the answer sheets…", () => call(`${API}/classes/${C.class_id}/upload/${round}?filename=${encodeURIComponent(filename)}`, { method: "POST", body }));
+}
+function uploadFile(round) {
+  const file = $(`file-${round}`).files[0];
+  if (file) uploadBytes(round, file, file.name); else { $("error").textContent = "Choose a file first."; $("error").style.display = "block"; }
+}
+async function useSample(round) {
+  const res = await fetch(`${API}/files/${C.pack}/${round}?sample=true`);
+  uploadBytes(round, await res.text(), "sample.csv");
+}
+const runModule = (route, message) => step(message, () => call(`/api/adaptive/${route}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ classId: C.class_id }) }));
+const probe = (student, c, outcome) => step("Saving the probe result…", () => post("probes", { student, code: c, outcome }));
+const move = (student, from_group, to_group) => to_group && step("Moving the student…", () => post("groups/move", { student, from_group, to_group, rationale: "Teacher edit" }));
+function raise(index) {
+  const ids = C.feeds.m5.groups.map(g => g.group_id);
+  [ids[index - 1], ids[index]] = [ids[index], ids[index - 1]];
+  step("Changing the order…", () => post("groups/priority", { group_ids: ids }));
+}
+const approve = () => step("Approving the plan…", () => post("plan/approve", {}));
+
+function card(title, purpose, stage, api, chipHtml, body, runButton) {
+  const locked = stage && !reached(stage);
+  return `<section class="${locked ? "locked" : ""}"><div class="head"><div><h2>${title}</h2><p class="muted small">${purpose}</p>${api ? `<p class="small muted">API: ${code(api)}</p>` : ""}</div><div>${chipHtml || ""}</div></div>${body || ""}${runButton || ""}</section>`;
+}
+const uploadReport = r => !r ? "" : `<p class="small"><b>${r.students}</b> students read, ${r.blank_answers} blank answers, ${r.rejected.length} rows rejected, ${r.warnings.length} warnings.</p>
+  ${r.rejected.length ? table(["Row","Reason"], r.rejected.map(x => [x.row, esc(x.reason)])) : ""}${r.warnings.length ? table(["Row","Student","Question","Warning"], r.warnings.map(x => [x.row, esc(x.student), esc(x.question), esc(x.message)])) : ""}`;
+const runBtn = (ready, route, label, message) => ready ? `<div class="row"><button onclick="runModule('${route}','${message}')">${label}</button></div>` : "";
+const nextText = n => n.action === "group" ? `Group ${code(n.target)}${n.held_for_later?.length ? `; later ${esc(n.held_for_later.join(", "))}` : ""}` : n.action === "probe" ? `Probe ${code(n.target)}` : n.action === "practice" ? `Practise ${esc(n.target.join(", "))}` : words(n.action);
+
+function viewUpload() {
+  const body = C.stage === "created" ? `<div class="row"><a class="btn ghost" href="${API}/files/${C.pack}/v1">Download template</a><input type="file" id="file-v1" accept=".csv,.xlsx" aria-label="Answer sheet file"><button onclick="uploadFile('v1')">Upload</button><button class="ghost" onclick="useSample('v1')">Use sample class</button></div>
+    <p class="small">${esc(C.subject_map.upload_hint)}</p><p class="small muted">One row per student, one column per question. Use student codes, not names. In Excel, format answer columns as text so 4/10 does not become a date.</p>` : uploadReport(C.uploads.v1);
+  return card("Bulk upload of answers","Everyone's answers, in one CSV or Excel file.",null,"POST /api/classes/{id}/upload/v1",null,body);
+}
+function viewM3() {
+  const f = C.feeds.m3;
+  let body = "";
+  if (f) {
+    const openProbes = f.students.filter(s => s.next.action === "probe" && C.stage === "identified");
+    body = (f.ai_failed_students ? `<p class="small" style="color:var(--warn)">${f.ai_failed_students} students could not be AI-marked; their written answers are with the teacher.</p>` : "") +
+      table(["Student","Evidence","Next step","For teacher"], f.students.map(s => [esc(s.student),
+        (Object.entries(s.summary).map(([c,v]) => `${code(c)} ${esc(C.subject_map.misconceptions[c]?.name)}: ${words(v.status)} (${esc(v.questions.join(", "))})`).join("<br>") || "All clear") +
+        `<details><summary>Every answer</summary>${table(["Q","Answer","Result","Finding"], s.answers.map(a => [esc(a.q), esc(a.working), words(a.result), a.findings.map(x => `${code(x.belief)} ${esc(x.confidence)}: ${esc(x.evidence)}`).join("<br>")]))}</details>`,
+        nextText(s.next), esc(s.teacher.join(", ")) || "None"]));
+    if (openProbes.length) body += `<h3>Follow-up probes: ask, then record the result</h3>` + table(["Student","Question to ask","Result"], openProbes.map(s => [esc(s.student), esc(s.next.probe) || `<span class="muted">No probe drafted: teacher to decide.</span>`,
+      `<button class="tiny" onclick="probe('${esc(s.student)}','${esc(s.next.target)}','supports')">Confirms it</button> <button class="tiny ghost" onclick="probe('${esc(s.student)}','${esc(s.next.target)}','rules_out')">Rules it out</button>`]));
   }
-
-  function render(d) {
-    document.getElementById("status").textContent = d.note;
-    fill("m3", ["Student", "Evidence", "Next step", "For teacher"], d.students.map(s => [
-      esc(s.student),
-      Object.entries(s.summary).map(([c, v]) => `${code(c)} ${words(v.status)} (${esc(v.questions.join(", "))})`).join("<br>") || "Nothing to report",
-      nextStep(s.next), esc(s.teacher.join(", ")) || "None"]));
-
-    fill("m5", ["Need", "Intervention", "Competency", "Students", "Status"], d.groups.map(g => [
-      esc(g.need), `${code(g.intervention_id)}<br>${esc(d.plan.cards[g.group_id].title)}`, esc(g.competency_need_ids.join(", ")),
-      esc(g.student_ids.join(", ")), `${words(g.status)}; ${words(d.plan.cards[g.group_id].review_status)} content`]));
-
-    const size = d.class.class_size;
-    const remedy = (r, o) => !r.owners.includes(o) ? "" : r.remedies[o] ? esc(r.remedies[o]) : '<span class="gap">Awaiting expert draft</span>';
-    fill("owners", ["Misconception", "Students", "Student", "Teacher", "Content (us)"], d.class.misconceptions.map(r => [
-      `${code(r.code)}<br>${esc(r.name)}`, `${r.students.length} of ${size} (${r.share_percent}%)`, remedy(r, "student"), remedy(r, "teacher"), remedy(r, "content")]));
-
-    const need = Object.fromEntries(d.groups.map(g => [g.group_id, g.need]));
-    fill("m6", ["Period", "Minutes", "Teacher with", "Everyone else"], d.plan.periods.flatMap(p => [
-      [p.period, `0&ndash;${p.recap[1]}`, "Whole class recap", ""],
-      ...p.direct_teaching.map(s => [p.period, `${s.start}&ndash;${s.end}`, esc(need[s.teacher_with]), s.independent_practice.length ? "Supervised practice" : ""]),
-      [p.period, `${p.exit_ticket[0]}&ndash;${p.exit_ticket[1]}`, "Exit ticket for all", ""]]));
-
-    const outcome = Object.fromEntries(d.outcomes.map(o => [o.student, o]));
-    fill("m7", ["Student", "New item", "Answer", "Outcome", "Next step"], d.reassessment.map(r => [
-      esc(r.student), esc(r.item.text), esc(r.item.answer) || "Reasoned", words(outcome[r.student].outcome), words(outcome[r.student].next_step)]));
-
-    const changes = Object.values(d.profiles).flatMap(p => p.timeline.filter(t => t.session !== "diagnostic").map(t => [
-      esc(p.student_id), `${code(t.competency_id)} ${esc(p.competencies[t.competency_id].name)}`, `${words(t.from)} &rarr; ${words(t.to)}`, words(p.competencies[t.competency_id].next_action)]));
-    fill("m8", ["Student", "Competency", "Status change", "Next action"], changes.length ? changes : [["No status changed", "", "", ""]]);
-
-    document.getElementById("audit").textContent = `Audit trail: ${d.audit.length} recorded events.`;
+  return card("Module 3: Misconception identification","Reads each student's answers and forms evidence-linked hypotheses. AI marks written answers and places answers the rules could not, choosing only from the catalogue.","uploaded","POST /api/adaptive/identify",chip(f?.ai),body,runBtn(C.stage==="uploaded","identify","Analyse every student","AI is marking and analysing each student…"));
+}
+function viewM4() {
+  const f = C.feeds.m4; let body = "";
+  if (f) {
+    const needs = {};
+    f.mappings.filter(m => m.primary).forEach(m => { const k = m.primary.misconception_id; (needs[k] = needs[k] || { m: m.primary, s: [] }).s.push(m.student); });
+    body = table(["Need","Students","Intervention","Why"], Object.entries(needs).map(([k,v]) => [code(k), esc(v.s.join(", ")), `${code(v.m.recommended)}<br>${esc(f.titles[v.m.recommended])}<br><span class="chip warn">${words(v.m.review_status)}</span>`, esc(f.why[k]) || `<span class="muted">Ranked by matching evidence.</span>`]));
   }
-
-  fetch("api/demo-loop?pack=" + (new URLSearchParams(location.search).get("pack") === "habit4" ? "habit4" : "probability")).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); }).then(render)
-    .catch(() => { document.getElementById("status").textContent = "The loop could not be loaded. Is the demo service running?"; });
+  return card("Module 4: Intervention mapping","Retrieves curated interventions per need. AI chooses only from that list and explains why.","identified","POST /api/adaptive/interventions",chip(f?.ai),body,runBtn(C.stage==="identified","interventions","Map interventions","AI is choosing from the curated interventions…"));
+}
+function viewM5() {
+  const f = C.feeds.m5; let body = "";
+  if (f) {
+    const edit = C.stage === "grouped";
+    body = table(["Group need","Intervention","Students",""], f.groups.map((g,i) => [`<b>${esc(g.need)}</b><br><span class="small muted">${esc(f.reasons[g.group_id])}</span>`, `${code(g.intervention_id)}<br>${esc(f.titles[g.intervention_id])}`,
+      g.student_ids.map(s => esc(s) + (edit && f.groups.length > 1 ? ` <select aria-label="Move ${esc(s)}" onchange="move('${esc(s)}','${g.group_id}',this.value)"><option value="">move…</option>${f.groups.filter(o => o.group_id !== g.group_id).map(o => `<option value="${o.group_id}">${esc(o.need)}</option>`).join("")}</select>` : "")).join("<br>"),
+      edit && i ? `<button class="tiny ghost" onclick="raise(${i})">Move up</button>` : ""]));
+    if (f.cohorts.length) body += `<h3>Not in a teaching group this session</h3>` + table(["Need","Students","What they do"], f.cohorts.map(c => [esc(c.need), esc(c.student_ids.join(", ")), esc(c.task)]));
+    body += `<h3>Who owns each fix</h3>` + table(["Misconception","Share of class","Owners","Awaiting expert draft"], f.owners.map(r => [`${code(r.code)} ${esc(r.name)}`, `${r.students.length} students (${r.share_percent}%)`, esc(r.owners.join(", ")), esc(r.awaiting_expert_draft.join(", ")) || "None"]));
+  }
+  return card("Module 5: Student clustering","Temporary groups by current need, in teaching order. Move students or reorder groups before planning. AI words each group's need for the teacher.","mapped","POST /api/adaptive/clusters",chip(f?.ai),body,runBtn(C.stage==="mapped","clusters","Form groups","Forming groups…"));
+}
+function viewM6() {
+  const f = C.feeds.m6; let body = "";
+  if (f) {
+    const rows = f.plan.periods.flatMap(p => [[p.period,`0–${p.recap[1]}`,"Whole class recap",""], ...p.direct_teaching.map(s => [p.period,`${s.start}–${s.end}`,esc(f.needs[s.teacher_with]),s.independent_practice.length?"Supervised practice":""]), [p.period,`${p.exit_ticket[0]}–${p.exit_ticket[1]}`,"Exit ticket for all",""]]);
+    body = `<p class="small">Status: <b>${words(f.plan.status)}</b></p>` + table(["Period","Minutes","Teacher with","Everyone else"], rows);
+    if (f.plan.independent_cohorts.length) body += `<h3>Independent work</h3><ul class="tight">${f.plan.independent_cohorts.map(c => `<li>${esc(c.need)} (${esc(c.student_ids.join(", "))}): ${esc(c.task)}</li>`).join("")}</ul>`;
+    body += `<h3>Teaching materials</h3>` + Object.entries(f.plan.cards).map(([g,c]) => { const m = f.materials[g];
+      return `<details><summary>${esc(f.needs[g])}: ${esc(c.title)} (${esc(f.groups[g].join(", "))})</summary><p class="small"><b>Steps</b></p><ol class="tight">${c.steps.map(s=>`<li>${esc(s)}</li>`).join("")}</ol>${c.exit_check?`<p class="small"><b>Exit check:</b> ${esc(c.exit_check)}</p>`:""}${m?`<p class="small"><span class="chip warn">${esc(m.label)}</span></p><p class="small"><b>Teacher script</b></p><ul class="tight">${m.teacher_script.map(s=>`<li>${esc(s)}</li>`).join("")}</ul><p class="small"><b>Worksheet</b></p><ul class="tight">${m.worksheet.map(s=>`<li>${esc(s)}</li>`).join("")}</ul>${m.exit_ticket?`<p class="small"><b>Exit ticket:</b> ${esc(m.exit_ticket)}</p>`:""}`:`<p class="small muted">No AI draft for this group.</p>`}</details>`; }).join("");
+  }
+  const approveBtn = C.stage==="planned" ? `<div class="row"><button onclick="approve()">Approve this plan</button><span class="small muted">You can't change it after this. Unreviewed drafts are marked.</span></div>` : "";
+  return card("Module 6: Differentiated instruction","A plan one teacher can run, one group at a time. AI drafts teaching material within the chosen intervention.","grouped","POST /api/adaptive/instruction",chip(f?.ai),body,runBtn(C.stage==="grouped","instruction","Build the plan","AI is drafting teaching material…")+approveBtn);
+}
+function viewM7() {
+  const p = C.feeds["m7-paper"], s = C.feeds["m7-score"]; let body = "";
+  if (p) {
+    body = `<details ${C.stage==="paper_ready"?"open":""}><summary>V2 paper (${p.paper.length} new questions, same competencies)</summary>${table(["Q","Question","Marking","Check"], p.paper.map(i => [esc(i.id), esc(i.text), esc(i.answer), p.flags[i.id] ? `<span class="chip warn">${esc(p.flags[i.id])}</span>` : "Clear"]))}</details>`;
+    if (C.stage==="paper_ready") body += `<div class="row"><a class="btn ghost" href="${API}/files/${C.pack}/v2">Download V2 template</a><input type="file" id="file-v2" accept=".csv,.xlsx" aria-label="V2 answer sheet file"><button onclick="uploadFile('v2')">Upload V2 answers</button><button class="ghost" onclick="useSample('v2')">Use sample V2</button></div>`;
+    else body += uploadReport(C.uploads.v2);
+  }
+  if (s) {
+    const cmp = s.comparison;
+    body += `<h3>V1 against V2, by misconception</h3>` + table(["Misconception","V1 students","V2 students"], cmp.misconceptions.map(m => [`${code(m.code)} ${esc(m.name)}`, m.v1_students, m.v2_students]));
+    body += `<h3>V1 against V2, by student</h3>` + table(["Student","V1","V2","No longer seen","Still seen","New"], cmp.students.map(x => [esc(x.student), x.v1_percent===null?"n/a":x.v1_percent+"%", x.v2_percent===null?"n/a":x.v2_percent+"%", esc(x.no_longer_seen.join(", "))||"–", esc(x.still_seen.join(", "))||"–", esc(x.newly_seen.join(", "))||"–"]));
+    body += `<p class="small muted">A change in score is evidence to look at, not proof that the teaching caused it.</p>`;
+    if (cmp.did_not_sit.length) body += `<p class="small">Did not sit V2: ${esc(cmp.did_not_sit.join(", "))}</p>`;
+  }
+  return card("Module 7: Reassessment","A parallel paper for the class, then V1 against V2. The questions come from the question templates or the draft scenario bank. AI checks the paper for clarity and marks V2.","approved","POST /api/adaptive/reassessment-paper, then /reassessment-score",chip(s?.ai||p?.ai),body,runBtn(C.stage==="approved","reassessment-paper","Generate V2 paper","AI is reviewing the paper…")+runBtn(C.stage==="v2_uploaded","reassessment-score","Analyse V2 and compare","AI is marking V2…"));
+}
+function viewM8() {
+  const f = C.feeds.m8; let body = "";
+  if (f) {
+    if (f.narrative.class_summary) body += `<p>${esc(f.narrative.class_summary)}</p><p class="small"><span class="chip warn">AI draft: check against the V1 and V2 tables</span></p>`;
+    body += table(["Student","Competencies","Changed by V2","Next cycle",""], f.comparison.students.map(x => { const p = f.profiles[x.student]; const states = Object.values(p.competencies); const count = n => states.filter(c=>c.status===n).length;
+      return [esc(x.student), `${count("demonstrated")} demonstrated, ${count("developing")} developing, ${count("not_yet_demonstrated")} not yet, ${count("needs_review")} review`, p.timeline.filter(t=>t.session==="v2").map(t=>`${code(t.competency_id)} ${words(t.from)} → ${words(t.to)}`).join("<br>")||"–", nextText(x.next), esc(f.narrative.students[x.student])]; }));
+    body += `<p class="small muted">Status changes come from explicit rules; AI only words the summary. Audit trail: ${f.audit.length} recorded events.</p>`;
+  }
+  return card("Module 8: Profiles and next action","Adds V2 as new evidence, never overwriting V1, and recommends the next cycle. AI writes the plain-language summary.","scored","POST /api/adaptive/profile",chip(f?.ai),body,runBtn(C.stage==="scored","profile","Update profiles","Updating profiles…"));
+}
+const subjectLine = m => `${m.subject.subject}, ${m.subject.grade}: ${m.subject.chapter}`;
+function subjectMap(m) {
+  const reviewed = `${m.interventions.approved} of ${m.interventions.total} interventions expert-approved`;
+  return `<p class="small"><b>${esc(subjectLine(m))}</b> <span class="muted">(${esc(m.subject.board)}; ${esc(m.subject.source)})</span></p>
+    <p class="small muted">${Object.keys(m.competencies).length} competencies, ${Object.keys(m.misconceptions).length} misconception patterns, ${m.questions.length} questions; ${reviewed}.</p>
+    <details><summary>Competencies and misconceptions</summary>${table(["ID","Competency"], Object.entries(m.competencies).map(([k,c]) => [code(k), esc(c.name)]))}${table(["Code","Pattern","Belief","Competency"], Object.entries(m.misconceptions).map(([k,c]) => [code(k), esc(c.name), esc(c.belief), esc(c.competency_ids.join(", "))]))}</details>`;
+}
+const viewSubject = () => card("Subject", "Everything subject-specific comes from this pack. Every AI step is given this subject and scope.", null, "GET /api/subjects", null, subjectMap(C.subject_map));
+function showSubject() { $("subject-preview").innerHTML = subjectMap(SUBJECTS[$("pack").value]); }
+function viewNew() {
+  $("app").innerHTML = `<section><h2>Start a class</h2><p class="muted small">Choose the subject, then upload your class's answers.</p><div class="row"><select id="pack" aria-label="Subject" onchange="showSubject()">${Object.entries(SUBJECTS).map(([k,m]) => `<option value="${esc(k)}">${esc(subjectLine(m))}</option>`).join("")}</select><input type="text" id="name" placeholder="Class name" aria-label="Class name" maxlength="60"><button onclick="createClass()">Create class</button></div><div id="subject-preview" style="margin-top:12px"></div><p class="small muted">Use synthetic data for now: this demo has no sign-in.</p></section>`;
+  showSubject();
+}
+function render() {
+  const index = C?.stage ? ORDER.indexOf(C.stage) : -1;
+  $("steps").innerHTML = NAV.map(([label, stage]) => { const at = ORDER.indexOf(stage); return `<li class="${index>=at?"done":at===index+1?"now":""}">${index>=at?"✓ ":""}${label}</li>`; }).join("");
+  if (!C?.stage) return viewNew();
+  $("title").textContent = `${C.name}: ${subjectLine(C.subject_map)}. Bookmark this page to come back to this class.`;
+  $("app").innerHTML = viewSubject() + viewUpload() + viewM3() + viewM4() + viewM5() + viewM6() + viewM7() + viewM8();
+}
+(async () => {
+  SUBJECTS = await call(`${API}/subjects`);
+  const id = new URLSearchParams(location.search).get("class");
+  if (id) { C = { class_id: id }; try { await refresh(); return; } catch { C = null; $("error").textContent = "That class was not found."; $("error").style.display = "block"; } }
+  render();
+})();
 </script>
 </body>
 </html>

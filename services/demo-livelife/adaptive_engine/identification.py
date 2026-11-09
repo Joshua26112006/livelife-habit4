@@ -103,10 +103,22 @@ def _finish(pack, diagnosis):
     return diagnosis
 
 
-def diagnose_student(pack, sheet):
+def _apply_ai_reading(pack, trace, hint):
+    """A catalogue-limited AI reading of an answer the rules could not place. Medium confidence, so alone it only prompts a probe."""
+    if not hint or pack.misconceptions.get(hint.get("code"), {}).get("kind") != "belief":
+        return trace
+    unplaced = trace["result"] == "argument_unclear" or any(f["belief"] == UNMAPPED for f in trace["findings"])
+    if unplaced:
+        trace["result"] = "wrong"
+        trace["findings"] = [dict(belief=hint["code"], step="AI reading", confidence="medium", evidence=hint.get("why", ""), source="ai")]
+    return trace
+
+
+def diagnose_student(pack, sheet, items=None):
     """One response sheet -> traces, evidence summary, hypotheses, next step and the teacher's queue."""
-    answers = sheet.get("answers", {})
-    traces = [pack.read_answer(item, answers.get(item["id"], "")) for item in pack.items]
+    answers, hints = sheet.get("answers", {}), sheet.get("ai_hints", {})
+    traces = [_apply_ai_reading(pack, pack.read_answer(item, answers.get(item["id"], "")), hints.get(item["id"]))
+              for item in (pack.items if items is None else items)]
     teacher = [t["q"] for t in traces
                if t["result"] in NO_EVIDENCE_RESULTS or any(f["belief"] == UNMAPPED for f in t["findings"])]
     return _finish(pack, {"student": sheet["id"], "traces": traces, "summary": weigh(pack, traces), "teacher": teacher})

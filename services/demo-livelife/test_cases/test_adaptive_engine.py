@@ -20,7 +20,6 @@ from adaptive_engine.profile import LearnerProfile  # noqa: E402
 
 SHEETS = json.loads((ROOT / "demos/adaptive-engine/sample_sheets.json").read_text())["students"]
 SHEET = {s["id"]: s for s in SHEETS}
-API = "/demo-livelife/adaptive-engine/api"
 client = TestClient(server.create_app())
 
 
@@ -166,52 +165,6 @@ def test_parallel_items_are_new_and_keep_the_competency(item, attempt):
         assert 0 < new["correct"] < 1 and new["correct"] not in [s["value"] for s in new["signatures"] if "value" in s]
 
 
-def test_reassessment_targets_the_competency_of_the_need():
-    items = approved_cycle().create_reassessment()
-    assert "PROB-02" in items["P02"]["competency_ids"]  # MC-L first showed on T1, which does not sample PROB-02
-    assert "PROB-07" in items["P04"]["competency_ids"]
-
-
-def test_reassessment_needs_an_approved_plan():
-    with pytest.raises(ValueError):
-        cycle().create_reassessment()
-
-
-@pytest.mark.parametrize("answer, outcome, step", [
-    ("favourable over total = {c}", "demonstrated", "leave_group"),
-    ("{c}", "insufficient", "reasoning_probe"),
-    ("", "needs_review", "teacher_review"),
-])
-def test_reassessment_outcomes(answer, outcome, step):
-    c = approved_cycle()
-    item = c.create_reassessment()["P02"]
-    result = c.submit_reassessment({"P02": answer.format(c=item["correct"])})[0]
-    assert (result["outcome"], result["next_step"]) == (outcome, step)
-
-
-# Module 8
-def test_profile_adds_evidence_and_never_overwrites():
-    c = approved_cycle()
-    before = len(c.profiles["P02"].evidence)
-    item = c.create_reassessment()["P02"]
-    c.submit_reassessment({"P02": f"favourable over total = {item['correct']}"})
-    profile = c.profiles["P02"]
-    assert len(profile.evidence) == before + len(item["competency_ids"])
-    assert {"diagnostic", "reassessment-1"} == {e["session"] for e in profile.evidence}
-
-
-def test_status_moves_from_not_yet_to_demonstrated_and_is_on_the_timeline():
-    c = approved_cycle()
-    item = c.create_reassessment()["P02"]
-    competency = item["competency_ids"][0]
-    assert c.profiles["P02"].view()["competencies"][competency]["status"] != "demonstrated"
-    c.submit_reassessment({"P02": f"favourable over total = {item['correct']}"})
-    view = c.profiles["P02"].view()
-    assert view["competencies"][competency]["status"] == "demonstrated"
-    assert view["competencies"][competency]["next_action"] == "spaced_review"
-    assert any(t["competency_id"] == competency and t["to"] == "demonstrated" for t in view["timeline"])
-
-
 def _trace(result, working=True, belief=None):
     findings = [{"belief": belief, "confidence": "high"}] if belief else []
     return {"q": "T", "working": "w", "result": result, "shows_working": working, "findings": findings}
@@ -255,13 +208,3 @@ def test_every_stage_and_teacher_decision_is_audited_with_a_version():
     assert all(e["pack_version"] == PACK.version for e in c.audit)
     with pytest.raises(ValueError):
         c.teacher_feedback("x", "shrug", "t1")
-
-
-def test_demo_loop_runs_modules_three_to_eight():
-    res = client.get(f"{API}/demo-loop")
-    assert res.status_code == 200 and res.headers["cache-control"] == "no-store"
-    body = res.json()
-    assert {o["student"]: o["outcome"] for o in body["outcomes"]} == {
-        "P02": "demonstrated", "P03": "partial", "P04": "persistent", "P05": "insufficient", "P06": "demonstrated"}
-    assert body["plan"]["status"] == "approved"
-    assert body["next_cycle"]["leave_group"] == ["P02", "P06"]

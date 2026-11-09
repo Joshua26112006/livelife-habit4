@@ -11,6 +11,7 @@ It has four things to see:
 | Habit 4 lesson (3 phases: Engagement, Understanding, Retention, with videos) + **student assessment** | http://localhost:3000/livelife/habit-4 |
 | **Teacher assessment** | http://localhost:3000/livelife/habit-4/teacher |
 | Latest teacher result | http://localhost:3000/livelife/habit-4/teacher?view=outcome |
+| **Adaptive teaching engine** (bulk upload, modules 3 to 8) | http://localhost:3000/adaptive |
 
 ## Run it
 

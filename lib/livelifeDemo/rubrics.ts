@@ -133,10 +133,10 @@ export function capFromFound(key: ScenarioKey, found: unknown): number | null {
 }
 
 /** The system prompt. The children's texts are DATA, never instructions. */
-export function systemPrompt(keys: readonly ScenarioKey[]): string {
+export function systemPrompt(keys: readonly ScenarioKey[], questions: Partial<Record<ScenarioKey, string>> = {}): string {
   const blocks = keys.map(k => {
     const it = ITEMS[k];
-    return `${k} — ${it.name}\nQuestion: ${it.question}\nExpected answer / evidence indicators (examples, not a checklist): ${it.indicators}\nScoring rubric: ${it.rubric}\nParts the rubric looks for: ${it.elements.map(e => `[${e}]`).join(" ")}`;
+    return `${k} — ${it.name}\nQuestion: ${questions[k] ?? it.question}\nExpected answer / evidence indicators (examples, not a checklist): ${it.indicators}\nScoring rubric: ${it.rubric}\nParts the rubric looks for: ${it.elements.map(e => `[${e}]`).join(" ")}`;
   }).join("\n\n");
   return `You mark short written answers from a student aged 11–16 for a Habit 4 "Think Win-Win" assessment (LiveLife, Level 5). The student's answers arrive one per item. Score each one 0–4 using ONLY that item's rubric and the common anchors below.
 
@@ -160,4 +160,30 @@ ${blocks}
 Return JSON only, in this shape, with an entry for EVERY item listed above and no others:
 { "results": { "<item>": { "found": ["<the parts actually written>"], "score": <integer 0-4>, "evidence": "<one sentence, max 200 characters: what the answer showed>", "tip": "<one sentence, max 150 characters: one simple practice tip>", "flag": <true|false>${keys.includes("S7") ? ', "consequence": "ok|punitive|harmful" (S7 only)' : ""} } },
   "summary": { "strengths": ["<2 brief strengths tied to the answers, max 160 characters each>"], "skills": ["<1 or 2 specific skills to practise, max 160 characters each>"], "try_next": "<one practical, child-friendly action, max 200 characters>", "teacher_support": "<short guidance a teacher could use to reinforce a skill, max 200 characters>" } }`;
+}
+
+export interface ScenarioMark { score: number | null; evidence: string; tip: string; flag: boolean }
+
+const cleanText = (s: unknown, max: number): string =>
+  typeof s === "string" ? s.replace(/\s+/g, " ").trim().slice(0, max) : "";
+
+/** One item of the model's reply turned into a mark: clamped, capped by what was found, and only flagged with a real 0. */
+export function markScenario(k: ScenarioKey, r: Record<string, unknown> | undefined): ScenarioMark {
+  const n = Number(r?.score);
+  if (!r || r.score === null || r.score === undefined || !Number.isFinite(n)) return { score: null, evidence: "", tip: "", flag: false };
+  let score = Math.min(4, Math.max(0, Math.round(n)));
+  const cap = capFromFound(k, r.found);
+  if (cap !== null && score > cap) score = cap;
+  let tip = cleanText(r.tip, 150);
+  let flag = r.flag === true && score === 0;
+  if (k === "S7") {
+    if (r.consequence === "harmful") {
+      score = 0;
+      flag = true;
+    } else if (r.consequence === "punitive" && score > S7_CAP_AT) {
+      score = S7_CAP_AT;
+      tip = (tip ? tip + " " : "") + S7_CAP_NOTE;
+    }
+  }
+  return { score, evidence: cleanText(r.evidence, 200), tip, flag };
 }
