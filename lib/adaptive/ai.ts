@@ -4,7 +4,6 @@
  * If AI is off or a call fails, the module still runs on its rules and says so.
  */
 import { createLimiter } from "@/lib/livelifeDemo/limits";
-import { MAX_ANSWER_CHARS, isKey, markScenario, systemPrompt, type ScenarioKey } from "@/lib/livelifeDemo/rubrics";
 
 const MODEL = process.env.DEMO_LIVELIFE_MODEL || "openai/gpt-4o";
 const API_URL = process.env.DEMO_LIVELIFE_API_URL || "https://openrouter.ai/api/v1/chat/completions";
@@ -18,8 +17,7 @@ const MAX_TASKS = 220;
 const limiter = createLimiter({ perAddressPerHour: 500, perDay: 2000 });
 
 type JsonTask = { id: string; kind: "json"; system: string; user: string; max_tokens: number };
-type RubricTask = { id: string; kind: "rubric"; answers: Record<string, { text: string; key: string; question: string }> };
-type Task = JsonTask | RubricTask;
+type Task = JsonTask;
 
 function aiEnabled(): boolean {
   return process.env.DEMO_LIVELIFE_SCORE === "1" && Boolean(process.env.OPENROUTER_API_KEY || process.env.OPENAI_API_KEY);
@@ -57,19 +55,6 @@ async function chatOnce(system: string, user: string, maxTokens: number): Promis
   return JSON.parse(body.choices?.[0]?.message?.content ?? "{}");
 }
 
-async function markRubric(task: RubricTask): Promise<Record<string, unknown>> {
-  const entries = Object.entries(task.answers).filter(([, a]) => isKey(a.key));
-  const keys = entries.map(([, a]) => a.key as ScenarioKey);
-  const questions = Object.fromEntries(entries.map(([, a]) => [a.key, a.question])) as Partial<Record<ScenarioKey, string>>;
-  const user = entries.map(([, a]) => `${a.key} answer:\n"""\n${a.text.slice(0, MAX_ANSWER_CHARS)}\n"""`).join("\n\n");
-  const reply = await chat(systemPrompt(keys, questions), user, 1800);
-  const results = (reply.results ?? {}) as Record<string, Record<string, unknown>>;
-  return Object.fromEntries(entries.map(([qid, a]) => {
-    const { score, evidence, flag } = markScenario(a.key as ScenarioKey, results[a.key]);
-    return [qid, { score, evidence, flag }];
-  }));
-}
-
 async function runAll(tasks: Task[], address: string) {
   const results: Record<string, unknown> = {};
   let failed = 0;
@@ -79,7 +64,7 @@ async function runAll(tasks: Task[], address: string) {
       const task = tasks[next++];
       try {
         if (!limiter.take(address).ok) throw new Error("rate limited");
-        results[task.id] = task.kind === "rubric" ? await markRubric(task) : await chat(task.system, task.user, task.max_tokens);
+        results[task.id] = await chat(task.system, task.user, task.max_tokens);
       } catch (err) {
         failed += 1;
         // Student text is never logged.

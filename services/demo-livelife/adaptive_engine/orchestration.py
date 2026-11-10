@@ -5,16 +5,16 @@ to the next period. Every other group has a supervised task with an answer key. 
 teacher approves it.
 """
 from .interventions import teaching_card
+from .reading import PRACTICE_BASE as PRACTICE_ATTEMPT_BASE
 
 DEFAULT_PERIOD_MINUTES = 45
 RECAP_MINUTES = 5
 EXIT_TICKET_MINUTES = 5
 PRACTICE_ITEMS_PER_GROUP = 2
-PRACTICE_ATTEMPT_BASE = 100
 
 
 def _practice_items(pack, evidence_item_id):
-    return [pack.parallel_item(pack.item(evidence_item_id), PRACTICE_ATTEMPT_BASE + i) for i in range(PRACTICE_ITEMS_PER_GROUP)]
+    return [pack.parallel(pack.item(evidence_item_id), PRACTICE_ATTEMPT_BASE + i) for i in range(PRACTICE_ITEMS_PER_GROUP)]
 
 
 def plan_sessions(pack, groups, evidence_item_for, period_minutes=DEFAULT_PERIOD_MINUTES, cohorts=(), card_groups=()):

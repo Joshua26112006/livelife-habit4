@@ -55,7 +55,7 @@ def question_view(pack, diagnoses, items=None):
                 way["students"].append(student)
         ordered = sorted(ways.values(), key=lambda w: (LEVEL_ORDER.index(w["level"]), -w["count"]))
         out.append({"id": item["id"], "text": item["text"], "level": item.get("level"), "icon": item.get("icon"),
-                    "answer": str(item.get("correct") or item.get("key") or "Reasoned answer"), "ways": ordered,
+                    "answer": str(item.get("correct") or item.get("answer") or item.get("key") or "Reasoned answer"), "ways": ordered,
                     "sound": sum(w["count"] for w in ordered if w["level"] in SOUND), "students": len(students)})
     return out
 

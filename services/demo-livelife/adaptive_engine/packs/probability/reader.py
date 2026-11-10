@@ -11,47 +11,17 @@ import re
 from fractions import Fraction as F
 
 from ...pack import UNMAPPED
+from ...values import _NUM, read_values
 
-_NUM = r"\d+(?:\.\d+)?"
-# A minus is a sign only when it does not follow a number or a bracket, so "1 - 1/4" and "1 -1/4" are subtractions.
-_SIGN = r"(?:(?<![\d)])(?<![\d)]\s)-)?"
-_VALUE = re.compile(
-    rf"(?P<pct>{_NUM})\s*%|(?P<num>{_SIGN}{_NUM})\s*/\s*(?P<den>{_SIGN}{_NUM})|(?P<dec>{_SIGN}\d*\.\d+)"
-)
 _PAIR = re.compile(r"\(\s*(\d)\s*,\s*(\d)\s*\)")
 _COIN_SEQUENCE = re.compile(r"\b([HT]{2,4})\b")
 _ADDED_FRACTIONS = re.compile(rf"{_NUM}\s*/\s*{_NUM}\s*\+\s*{_NUM}\s*/\s*{_NUM}")
-# A whole number counts as the final value only as the result of a calculation ("1/2 + 1/2 = 1"), not "total = 10".
-_RESULT_INTEGER = re.compile(r"[\d)]\s*=\s*(-?\d+)\s*\.?\s*$")
-_BARE_INTEGER = re.compile(r"\s*(?:p\s*=\s*|ans\w*\s*[:=]?\s*)?(-?\d+)\s*\.?\s*", re.I)
 _ANSWER_LABELS = re.compile(r"\b(ans|answer|final|result|hence|therefore|so|the|is|equals?|prob|probability)\b", re.I)
 _DISAGREES = re.compile(r"\b(no|not|wrong|disagree|incorrect)\b", re.I)
 _AGREES = re.compile(r"\b(yes|right|correct|agree)\b", re.I)
 _CATEGORY_TALK = re.compile(r"\b[a-z0-9]+ or (?:not |no )?(?:a |an )?[a-z0-9]+\b", re.I)
 _COMPLEMENT = re.compile(r"1\s*[-\u2212]\s*\d")
 _TABLE_WORDS = re.compile(r"\b(row|column|cells?|table)\b", re.I)
-
-
-def read_values(text):
-    """Every fraction, decimal and percentage in the working as (numerator, denominator), in order."""
-    values = []
-    for m in _VALUE.finditer(text):
-        if m["pct"]:
-            values.append((F(m["pct"]), F(100)))
-        elif m["num"]:
-            if F(m["den"]) != 0:
-                values.append((F(m["num"]), F(m["den"])))
-        else:
-            values.append((F(m["dec"]), F(1)))
-    if values:
-        result = _RESULT_INTEGER.search(text)
-        if result and result.start() >= list(_VALUE.finditer(text))[-1].end() - 1:
-            values.append((F(result[1]), F(1)))
-    else:
-        bare = _BARE_INTEGER.fullmatch(text)
-        if bare:
-            values.append((F(bare[1]), F(1)))
-    return values
 
 
 def classify_reason(text):

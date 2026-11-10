@@ -1,0 +1,905 @@
+{
+ "about": "Habit 4 subject pack, as data. Questions are exported from the student assessment (services/demo-livelife/demos/livelife-student/backend.py) and rubrics from lib/livelifeDemo/rubrics.ts: change those and re-export together. Patterns, interventions and parallel scenarios are drafts for expert review.",
+ "chapter_id": "livelife-habit-4",
+ "version": "habit4-draft-0.1",
+ "subject": {
+  "subject": "Life Skills",
+  "board": "LiveLife Education",
+  "grade": "Level 5",
+  "chapter": "Habit 4: Think Win-Win",
+  "source": "Discovering the Leader in Me"
+ },
+ "brief": "LiveLife Education, Discovering the Leader in Me, Level 5, Habit 4: Think Win-Win, students aged 11 to 16. Keep to its three mindsets, courage and consideration, the Emotional Bank Account as a metaphor, promises, and the five-part Win-Win Agreement. Win-Win does not mean both people get their first choice.",
+ "upload_hint": "K1 to K9: the option letter. S1 to S8: the student's own written answer.",
+ "extension_task": "Draft a Win-Win Agreement for a real situation in your class, then check it for all five parts.",
+ "competencies": {
+  "S1": {
+   "name": "Think Win-Win understanding",
+   "prerequisites": []
+  },
+  "S2": {
+   "name": "Mindset classification",
+   "prerequisites": []
+  },
+  "S3": {
+   "name": "Perspective and consideration",
+   "prerequisites": []
+  },
+  "S4": {
+   "name": "Workable Win-Win option",
+   "prerequisites": []
+  },
+  "S5": {
+   "name": "Respectful communication",
+   "prerequisites": []
+  },
+  "S6": {
+   "name": "Promises and trust",
+   "prerequisites": []
+  },
+  "S7": {
+   "name": "Win-Win Agreement components",
+   "prerequisites": []
+  },
+  "S8": {
+   "name": "Reflection and accountable action",
+   "prerequisites": []
+  }
+ },
+ "misconceptions": {
+  "WW-NAMES": {
+   "name": "Mixes up the mindset names",
+   "belief": "Win-Win, Win-Lose and Lose-Win are interchangeable names.",
+   "kind": "belief",
+   "competency_ids": [
+    "S2"
+   ],
+   "student": "Say who gets what they need in each one before naming it.",
+   "teacher": "Sort short situations into the three mindsets, asking who gets what they need each time.",
+   "content": null,
+   "exit_check": "A friend always picks the film and you never say what you want. Name the mindset and say why."
+  },
+  "WW-GIVE-IN": {
+   "name": "Treats Win-Win as one person giving in",
+   "belief": "Win-Win means I should just agree.",
+   "kind": "belief",
+   "competency_ids": [
+    "S1"
+   ],
+   "student": "Ask: did what matters to me get said too?",
+   "teacher": "Use the lesson's point that Win-Win does not mean both get their first choice; contrast giving in with looking for a third option.",
+   "content": null,
+   "exit_check": "Your friend wants to leave early and you do not. What would Win-Win look like? Why is giving in not the same?"
+  },
+  "WW-INSIST": {
+   "name": "Treats a good outcome as getting my way",
+   "belief": "My idea matters more than the other person's.",
+   "kind": "belief",
+   "competency_ids": [
+    "S1",
+    "S2"
+   ],
+   "student": "Before deciding, say what the other person needs.",
+   "teacher": "Use Courage and Consideration: keep the courage to speak and add consideration for the other person.",
+   "content": null,
+   "exit_check": "Your group must pick one topic and you love yours. What do you say first?"
+  },
+  "WW-ONE-SIDED": {
+   "name": "Decides without asking what the other person needs",
+   "belief": "One side's need is enough to decide.",
+   "kind": "belief",
+   "competency_ids": [
+    "S3",
+    "S4"
+   ],
+   "student": "Write one question that finds out what the other person needs.",
+   "teacher": "Practise asking before proposing: each pair states both needs, then one option that serves both.",
+   "content": null,
+   "exit_check": "Two teams want the hall at the same time. What do you ask before suggesting a plan?"
+  },
+  "WW-DISMISS": {
+   "name": "Responds without listening",
+   "belief": "Disagreeing means correcting or ignoring.",
+   "kind": "belief",
+   "competency_ids": [
+    "S5"
+   ],
+   "student": "Say back what you heard, then ask one respectful question.",
+   "teacher": "Model acknowledging a view before sharing your own; pairs rehearse with a low-stakes disagreement.",
+   "content": null,
+   "exit_check": "Write one sentence that shows you heard a classmate you disagree with."
+  },
+  "WW-AVOID": {
+   "name": "Avoids or hides a broken promise",
+   "belief": "If I say nothing, trust is not affected.",
+   "kind": "belief",
+   "competency_ids": [
+    "S6"
+   ],
+   "student": "Tell the person early, say what happened, agree a next step.",
+   "teacher": "Use the Emotional Bank Account as a metaphor: telling early protects trust, hiding withdraws from it.",
+   "content": null,
+   "exit_check": "You cannot finish your part by the agreed time. What do you do, and when?"
+  },
+  "WW-VAGUE": {
+   "name": "Makes a promise too general to check",
+   "belief": "Meaning well is the same as a clear commitment.",
+   "kind": "belief",
+   "competency_ids": [
+    "S8"
+   ],
+   "student": "Add when, with whom, and how you will know you did it.",
+   "teacher": "Rewrite broad promises like 'be nicer' into an action, a time and a check.",
+   "content": null,
+   "exit_check": "Rewrite 'I will be helpful' as a promise you could check this week."
+  },
+  "WW-AGREEMENT": {
+   "name": "Treats an agreement as a general rule",
+   "belief": "An agreement is a rule or a promise, without clear parts.",
+   "kind": "belief",
+   "competency_ids": [
+    "S7"
+   ],
+   "student": "Check for all five parts before you finish.",
+   "teacher": "Build one agreement together using Desired Results, Guidelines, Resources, Accountability and Consequences.",
+   "content": null,
+   "exit_check": "You and a friend share a bicycle. Write the five parts of your agreement."
+  },
+  "H4-PARTIAL": {
+   "name": "Partly shown",
+   "belief": "On the right track; part of what the rubric looks for is missing.",
+   "kind": "slip",
+   "competency_ids": [
+    "S1",
+    "S2",
+    "S3",
+    "S4",
+    "S5",
+    "S6",
+    "S7",
+    "S8"
+   ],
+   "student": "Look at the rubric's next level and add the missing part.",
+   "teacher": null,
+   "content": null,
+   "exit_check": null
+  }
+ },
+ "teaching_order": [
+  "WW-NAMES",
+  "WW-GIVE-IN",
+  "WW-INSIST",
+  "WW-ONE-SIDED",
+  "WW-DISMISS",
+  "WW-AVOID",
+  "WW-VAGUE",
+  "WW-AGREEMENT"
+ ],
+ "probes": {
+  "WW-NAMES": "A student always lets others choose. Which mindset is that, and who is not getting what they need?",
+  "WW-GIVE-IN": "If you agree just to stop an argument, is that Win-Win? Why or why not?",
+  "WW-INSIST": "Your idea was not chosen. What would still make the result fair?",
+  "WW-ONE-SIDED": "What would you need to know from the other person before you decide?",
+  "WW-DISMISS": "A classmate disagrees with you. What is the first thing you would say?",
+  "WW-AVOID": "You realise you cannot keep a promise. Who do you tell, and when?",
+  "WW-VAGUE": "How would someone else know that you kept this promise?",
+  "WW-AGREEMENT": "What would your agreement say about what happens if someone does not do their part?"
+ },
+ "separating_probes": [
+  {
+   "codes": [
+    "WW-GIVE-IN",
+    "WW-INSIST"
+   ],
+   "probe": "When two friends disagree, who should change their mind, and why?"
+  },
+  {
+   "codes": [
+    "WW-INSIST",
+    "WW-NAMES"
+   ],
+   "probe": "Name the mindset in 'my idea must be chosen'. Would you do it that way yourself?"
+  }
+ ],
+ "interventions": {
+  "INT-H4-NAMES": {
+   "title": "Telling the mindsets apart (lesson: h4-mindsets)",
+   "objective": null,
+   "steps": [
+    "Recap the three ways to handle a problem.",
+    "Sort situations into the three mindsets.",
+    "Say who gets what they need in each."
+   ],
+   "duration_minutes": [
+    10,
+    15
+   ],
+   "assets": [],
+   "item_types": [
+    "choice",
+    "written"
+   ],
+   "exit_check": null,
+   "review_status": "draft",
+   "version": "habit4-draft-0.1"
+  },
+  "INT-H4-GIVE-IN": {
+   "title": "Win-Win is not giving in (lesson: h4-mindsets)",
+   "objective": null,
+   "steps": [
+    "Contrast giving in with looking for a third option.",
+    "Replay one scenario both ways.",
+    "Students write an option that considers both."
+   ],
+   "duration_minutes": [
+    10,
+    15
+   ],
+   "assets": [],
+   "item_types": [
+    "choice",
+    "written"
+   ],
+   "exit_check": null,
+   "review_status": "draft",
+   "version": "habit4-draft-0.1"
+  },
+  "INT-H4-INSIST": {
+   "title": "Courage with consideration (lesson: h4-mindsets)",
+   "objective": null,
+   "steps": [
+    "Revisit courage and consideration.",
+    "Find what the other person needs in a scenario.",
+    "Rewrite a demand as a shared proposal."
+   ],
+   "duration_minutes": [
+    10,
+    15
+   ],
+   "assets": [],
+   "item_types": [
+    "choice",
+    "written"
+   ],
+   "exit_check": null,
+   "review_status": "draft",
+   "version": "habit4-draft-0.1"
+  },
+  "INT-H4-ONE-SIDED": {
+   "title": "Ask before deciding (lesson: h4-mindsets)",
+   "objective": null,
+   "steps": [
+    "Each partner states what they need.",
+    "Write one respectful question.",
+    "Propose an option and check it with both."
+   ],
+   "duration_minutes": [
+    10,
+    15
+   ],
+   "assets": [],
+   "item_types": [
+    "choice",
+    "written"
+   ],
+   "exit_check": null,
+   "review_status": "draft",
+   "version": "habit4-draft-0.1"
+  },
+  "INT-H4-DISMISS": {
+   "title": "Listening when you disagree (lesson: h4-mindsets)",
+   "objective": null,
+   "steps": [
+    "Model acknowledging before responding.",
+    "Pairs rehearse with a low-stakes disagreement.",
+    "Write a sentence that shows listening."
+   ],
+   "duration_minutes": [
+    10,
+    15
+   ],
+   "assets": [],
+   "item_types": [
+    "choice",
+    "written"
+   ],
+   "exit_check": null,
+   "review_status": "draft",
+   "version": "habit4-draft-0.1"
+  },
+  "INT-H4-AVOID": {
+   "title": "Protecting trust when a promise slips (lesson: h4-promises)",
+   "objective": null,
+   "steps": [
+    "Use the Emotional Bank Account metaphor.",
+    "Compare telling early with hiding it.",
+    "Write what to say and when."
+   ],
+   "duration_minutes": [
+    10,
+    15
+   ],
+   "assets": [],
+   "item_types": [
+    "choice",
+    "written"
+   ],
+   "exit_check": null,
+   "review_status": "draft",
+   "version": "habit4-draft-0.1"
+  },
+  "INT-H4-VAGUE": {
+   "title": "Promises you can check (lesson: h4-promises)",
+   "objective": null,
+   "steps": [
+    "Compare a broad promise with a specific one.",
+    "Add action, time and check.",
+    "Rewrite a promise of your own."
+   ],
+   "duration_minutes": [
+    10,
+    15
+   ],
+   "assets": [],
+   "item_types": [
+    "choice",
+    "written"
+   ],
+   "exit_check": null,
+   "review_status": "draft",
+   "version": "habit4-draft-0.1"
+  },
+  "INT-H4-AGREEMENT": {
+   "title": "The five parts of an agreement (lesson: h4-agreements)",
+   "objective": null,
+   "steps": [
+    "Name the five parts.",
+    "Build one agreement together.",
+    "Check a sample agreement for missing parts."
+   ],
+   "duration_minutes": [
+    10,
+    15
+   ],
+   "assets": [],
+   "item_types": [
+    "choice",
+    "written"
+   ],
+   "exit_check": null,
+   "review_status": "draft",
+   "version": "habit4-draft-0.1"
+  },
+  "INT-H4-PRACTICE": {
+   "title": "Reaching the next rubric level",
+   "objective": null,
+   "steps": [
+    "Read the next rubric level.",
+    "Add the missing part to your own answer."
+   ],
+   "duration_minutes": [
+    10,
+    15
+   ],
+   "assets": [],
+   "item_types": [
+    "choice",
+    "written"
+   ],
+   "exit_check": null,
+   "review_status": "draft",
+   "version": "habit4-draft-0.1"
+  }
+ },
+ "intervention_map": {
+  "WW-NAMES": [
+   "INT-H4-NAMES"
+  ],
+  "WW-GIVE-IN": [
+   "INT-H4-GIVE-IN"
+  ],
+  "WW-INSIST": [
+   "INT-H4-INSIST"
+  ],
+  "WW-ONE-SIDED": [
+   "INT-H4-ONE-SIDED"
+  ],
+  "WW-DISMISS": [
+   "INT-H4-DISMISS"
+  ],
+  "WW-AVOID": [
+   "INT-H4-AVOID"
+  ],
+  "WW-VAGUE": [
+   "INT-H4-VAGUE"
+  ],
+  "WW-AGREEMENT": [
+   "INT-H4-AGREEMENT"
+  ],
+  "H4-PARTIAL": [
+   "INT-H4-PRACTICE"
+  ]
+ },
+ "items": [
+  {
+   "id": "K1",
+   "text": "What does Think Win-Win mean?",
+   "competency_ids": [
+    "S1"
+   ],
+   "level": "easy",
+   "format": "choice",
+   "options": {
+    "A": "I get what I want even if you do not.",
+    "B": "I give up what I want every time.",
+    "C": "We look for a solution that considers what matters to both of us.",
+    "D": "We avoid discussing the problem."
+   },
+   "key": "C",
+   "distractors": {
+    "A": "WW-INSIST",
+    "B": "WW-GIVE-IN",
+    "D": "WW-AVOID"
+   }
+  },
+  {
+   "id": "K2",
+   "text": "I insist on choosing the game and my friend cannot choose. Which mindset does this most closely show?",
+   "competency_ids": [
+    "S2"
+   ],
+   "level": "easy",
+   "format": "choice",
+   "options": {
+    "A": "Win-Win",
+    "B": "Win-Lose",
+    "C": "Lose-Win",
+    "D": "Interdependent Living"
+   },
+   "key": "B",
+   "distractors": {
+    "A": "WW-NAMES",
+    "C": "WW-NAMES",
+    "D": "WW-NAMES"
+   }
+  },
+  {
+   "id": "K3",
+   "text": "Your partner wants quiet to work, while you want to discuss ideas aloud. What is the best first step?",
+   "competency_ids": [
+    "S3"
+   ],
+   "level": "easy",
+   "format": "choice",
+   "options": {
+    "A": "Tell them to adjust.",
+    "B": "Stop working.",
+    "C": "Ask what they need and share what you need.",
+    "D": "Decide without asking."
+   },
+   "key": "C",
+   "distractors": {
+    "A": "WW-INSIST",
+    "B": "WW-GIVE-IN",
+    "D": "WW-ONE-SIDED"
+   }
+  },
+  {
+   "id": "K4",
+   "text": "Both classmates want to use the same materials at the same time. Which is a possible Win-Win option?",
+   "competency_ids": [
+    "S4"
+   ],
+   "level": "easy",
+   "format": "choice",
+   "options": {
+    "A": "One takes everything.",
+    "B": "Hide the materials.",
+    "C": "Plan turns or divide materials based on the task.",
+    "D": "Let the louder student decide."
+   },
+   "key": "C",
+   "distractors": {
+    "A": "WW-INSIST",
+    "B": "WW-AVOID",
+    "D": "WW-INSIST"
+   }
+  },
+  {
+   "id": "K5",
+   "text": "What is a helpful way to respond when a classmate explains their point of view?",
+   "competency_ids": [
+    "S5"
+   ],
+   "level": "easy",
+   "format": "choice",
+   "options": {
+    "A": "Interrupt to correct them.",
+    "B": "Listen and ask a respectful question.",
+    "C": "Laugh.",
+    "D": "Ignore their idea."
+   },
+   "key": "B",
+   "distractors": {
+    "A": "WW-DISMISS",
+    "C": "WW-DISMISS",
+    "D": "WW-DISMISS"
+   }
+  },
+  {
+   "id": "K6",
+   "text": "You promised to bring a game but realize you cannot. What is the responsible action?",
+   "competency_ids": [
+    "S6"
+   ],
+   "level": "easy",
+   "format": "choice",
+   "options": {
+    "A": "Say nothing.",
+    "B": "Blame a friend.",
+    "C": "Tell the person early, explain briefly and agree on a next step.",
+    "D": "Pretend you brought it."
+   },
+   "key": "C",
+   "distractors": {
+    "A": "WW-AVOID",
+    "B": "WW-AVOID",
+    "D": "WW-AVOID"
+   }
+  },
+  {
+   "id": "K7",
+   "text": "Which list contains the five parts of a Win-Win Agreement?",
+   "competency_ids": [
+    "S7"
+   ],
+   "level": "easy",
+   "format": "choice",
+   "options": {
+    "A": "Desired Results, Guidelines, Resources, Accountability, Consequences.",
+    "B": "Rules, prizes, winner, loser, score.",
+    "C": "Feelings, opinions, grades, rewards, punishment.",
+    "D": "Goals, blame, silence, penalty, winner."
+   },
+   "key": "A",
+   "distractors": {
+    "B": "WW-AGREEMENT",
+    "C": "WW-AGREEMENT",
+    "D": "WW-AGREEMENT"
+   }
+  },
+  {
+   "id": "K8",
+   "text": "Which is the most useful promise?",
+   "competency_ids": [
+    "S8"
+   ],
+   "level": "easy",
+   "format": "choice",
+   "options": {
+    "A": "I will always be perfect.",
+    "B": "I will be nice.",
+    "C": "During tomorrow’s group task, I will listen to each partner before suggesting an idea.",
+    "D": "I will never disagree."
+   },
+   "key": "C",
+   "distractors": {
+    "A": "WW-VAGUE",
+    "B": "WW-VAGUE",
+    "D": "WW-VAGUE"
+   }
+  },
+  {
+   "id": "K9",
+   "text": "Every break, you let your friend choose the game because you do not want an argument, even when you would like a turn. Which mindset does this most closely show?",
+   "competency_ids": [
+    "S2"
+   ],
+   "level": "easy",
+   "format": "choice",
+   "options": {
+    "A": "Lose-Win",
+    "B": "Win-Lose",
+    "C": "Win-Win",
+    "D": "Interdependent Living"
+   },
+   "key": "A",
+   "distractors": {
+    "B": "WW-NAMES",
+    "C": "WW-NAMES",
+    "D": "WW-NAMES"
+   }
+  },
+  {
+   "id": "S1",
+   "text": "Two friends disagree about whether to play football or a board game. One student says, “Win-Win means I should just agree with my friend.” What would you suggest they do?",
+   "competency_ids": [
+    "S1"
+   ],
+   "level": "medium",
+   "format": "written",
+   "rubric": {
+    "indicators": "Strong answer: clarify that Win-Win is not always giving in; both should share what matters and look for an option considering both (e.g., play one now and schedule the other, if both agree).",
+    "levels_text": "4: Correctly explains Win-Win is not giving in and proposes a fair option considering both. 3: Accurate explanation plus a relevant next step. 2: Says “take turns/compromise” but does not clarify the misconception or needs. 1: Recommends one person always giving in or one person winning. 0: Blank, unrelated or disrespectful/shaming.",
+    "elements": [
+     "explains Win-Win is not just giving in",
+     "proposes a fair option that considers both friends",
+     "gives a relevant next step"
+    ]
+   },
+   "levels": {
+    "1": [
+     "WW-GIVE-IN",
+     "WW-INSIST"
+    ],
+    "2": [
+     "H4-PARTIAL"
+    ]
+   },
+   "variants": {
+    "retest": [
+     "Two cousins disagree about which show to watch. One says, “Win-Win means I just have to let you pick.” What would you suggest?",
+     "Your group disagrees about where to sit. Someone says, “Fine, I’ll give up, that’s Win-Win.” What would you say?"
+    ],
+    "practice": [
+     "Two friends want different snacks to share. What would a Win-Win look like?",
+     "A friend says Win-Win means nobody gets anything they want. What would you tell them?"
+    ]
+   }
+  },
+  {
+   "id": "S2",
+   "text": "During a class vote, a student says, “My idea must be chosen; other ideas do not matter.” Which mindset is shown? Explain briefly and suggest a better approach.",
+   "competency_ids": [
+    "S2"
+   ],
+   "level": "medium",
+   "format": "written",
+   "rubric": {
+    "indicators": "Strong answer: identifies Win-Lose; proposes hearing ideas and selecting/combining an option that considers the group’s needs.",
+    "levels_text": "4: Correctly identifies Win-Lose, explains why, and suggests inclusive alternative. 3: Correct classification and suitable alternative; explanation limited. 2: Classification or alternative is right, but not both. 1: Misclassifies or endorses domination. 0: Blank/irrelevant/harmful.",
+    "elements": [
+     "names the mindset as Win-Lose",
+     "explains why it is Win-Lose",
+     "suggests a better, inclusive approach"
+    ]
+   },
+   "levels": {
+    "1": [
+     "WW-NAMES",
+     "WW-INSIST"
+    ],
+    "2": [
+     "H4-PARTIAL"
+    ]
+   },
+   "variants": {
+    "retest": [
+     "A team captain says, “We do it my way or not at all.” Which mindset is this? Explain and suggest a better approach.",
+     "A student always stays quiet and lets others decide, even when upset. Which mindset is this? Suggest a better approach."
+    ],
+    "practice": [
+     "Someone says, “If I win, you have to lose.” Which mindset is this, and why?",
+     "A friend says, “Whatever you want, I don’t matter.” Which mindset is this, and what could help?"
+    ]
+   }
+  },
+  {
+   "id": "S3",
+   "text": "Your teammate wants more time to practice; you want to finish the project today. What would you ask or say before deciding?",
+   "competency_ids": [
+    "S3"
+   ],
+   "level": "medium",
+   "format": "written",
+   "rubric": {
+    "indicators": "Strong answer: asks what practice is needed and shares own deadline concern; listens and explores a plan that addresses both.",
+    "levels_text": "4: Clearly acknowledges both needs and uses respectful questions to explore. 3: Recognizes both perspectives and asks a useful question. 2: Mentions one side or gives a vague “talk about it.” 1: Dismisses the other person’s need. 0: Blank/irrelevant/shaming.",
+    "elements": [
+     "acknowledges both needs (teammate's and own)",
+     "asks a respectful question to explore",
+     "shows listening or exploring a plan for both"
+    ]
+   },
+   "levels": {
+    "1": [
+     "WW-ONE-SIDED"
+    ],
+    "2": [
+     "H4-PARTIAL"
+    ]
+   },
+   "variants": {
+    "retest": [
+     "Your friend wants to revise tonight; you want to go out. What would you ask or say before deciding?",
+     "Your partner wants to present first; you are nervous about going last. What would you say before deciding?"
+    ],
+    "practice": [
+     "A teammate wants a bright poster and you want a simple one. What would you ask them?",
+     "Your sibling wants the room quiet and you want music. What would you ask first?"
+    ]
+   }
+  },
+  {
+   "id": "S4",
+   "text": "Two students need the same computer for different parts of a project. Suggest one solution that could work for both and say how you would check it is fair.",
+   "competency_ids": [
+    "S4"
+   ],
+   "level": "medium",
+   "format": "written",
+   "rubric": {
+    "indicators": "Strong answer: proposes a feasible schedule/turns or shared plan; checks each student’s agreement and task needs.",
+    "levels_text": "4: Feasible solution addresses both needs and explicitly checks mutual acceptance/fairness. 3: Practical solution that considers both; check may be implicit. 2: Possible solution but one need or fairness check omitted. 1: Gives computer to one person without consideration. 0: Blank/irrelevant/harmful.",
+    "elements": [
+     "proposes a feasible solution for both students",
+     "addresses both students' needs",
+     "checks fairness or mutual agreement"
+    ]
+   },
+   "levels": {
+    "1": [
+     "WW-ONE-SIDED"
+    ],
+    "2": [
+     "H4-PARTIAL"
+    ]
+   },
+   "variants": {
+    "retest": [
+     "Two classmates need the same library book this week. Suggest one solution and say how you would check it is fair.",
+     "Two groups want the same practice ground after school. Suggest one solution and how you would check it is fair."
+    ],
+    "practice": [
+     "Two friends need the same calculator for a test and homework. What could work for both?",
+     "Two students both want the window seat on a trip. What could work for both?"
+    ]
+   }
+  },
+  {
+   "id": "S5",
+   "text": "In a discussion, your classmate says something you disagree with. Write one sentence you could say that shows listening and respect.",
+   "competency_ids": [
+    "S5"
+   ],
+   "level": "medium",
+   "format": "written",
+   "rubric": {
+    "indicators": "Strong answer example: “I hear that you think ____. Can you tell me why? I see it differently because ____.”",
+    "levels_text": "4: Respectful acknowledgement plus open question or calm sharing of own view. 3: Respectful response with either acknowledgement or constructive question. 2: Polite but generic, with little listening evidence. 1: Interrupting, insulting or dismissive language. 0: Blank or abusive response.",
+    "elements": [
+     "respectfully acknowledges what the classmate said",
+     "asks an open question or calmly shares own view"
+    ]
+   },
+   "levels": {
+    "1": [
+     "WW-DISMISS"
+    ],
+    "2": [
+     "H4-PARTIAL"
+    ]
+   },
+   "variants": {
+    "retest": [
+     "A classmate says your favourite sport is boring. Write one sentence that shows listening and respect.",
+     "In a debate, a classmate challenges your point. Write one sentence you could say that shows respect."
+    ],
+    "practice": [
+     "A friend thinks your plan will not work. What could you say first?",
+     "Someone in your group has a different answer from yours. What could you say?"
+    ]
+   }
+  },
+  {
+   "id": "S6",
+   "text": "You promised your sibling/friend you would help, but you cannot do it at the agreed time. What would you do to protect trust?",
+   "competency_ids": [
+    "S6"
+   ],
+   "level": "medium",
+   "format": "written",
+   "rubric": {
+    "indicators": "Strong answer: communicates early and honestly, acknowledges promise, and offers a realistic agreed alternative/next step.",
+    "levels_text": "4: Timely honest communication, ownership, and realistic mutually agreed repair. 3: Communicates honestly and suggests a next step. 2: Says apologize but lacks timing/plan. 1: Avoids, blames or hides. 0: Blank/irrelevant or endorses dishonesty.",
+    "elements": [
+     "communicates early",
+     "is honest and takes ownership",
+     "offers a realistic next step or agreed repair"
+    ]
+   },
+   "levels": {
+    "1": [
+     "WW-AVOID"
+    ],
+    "2": [
+     "H4-PARTIAL"
+    ]
+   },
+   "variants": {
+    "retest": [
+     "You told a friend you would return their notes today, but you left them at home. What would you do to protect trust?",
+     "You agreed to help with a poster but have a family event. What would you do to protect trust?"
+    ],
+    "practice": [
+     "You will be late to meet a friend. What would you do?",
+     "You forgot to do your part of a group task. What would you do next?"
+    ]
+   }
+  },
+  {
+   "id": "S7",
+   "text": "You and a classmate want to share a game console. What would you include in your agreement so it is clear and fair?",
+   "competency_ids": [
+    "S7"
+   ],
+   "level": "medium",
+   "format": "written",
+   "rubric": {
+    "indicators": "Strong answer should include: Desired Results (both get fair play time); Guidelines (turn length/order); Resources (console/controllers/time); Accountability (timer/checklist/partner check); Consequences (fair, related agreed next step if plan is not followed).",
+    "levels_text": "4: Addresses all five components accurately with specific fair terms. 3: Correctly addresses 4 components and agreement is workable. 2: Includes 2–3 components or mostly vague terms. 1: Only general promise/rule; most components absent. 0: Blank or proposes punitive, humiliating or unrelated consequence.",
+    "elements": [
+     "Desired Results",
+     "Guidelines",
+     "Resources",
+     "Accountability",
+     "Consequences (fair, related)"
+    ]
+   },
+   "levels": {
+    "1": [
+     "WW-AGREEMENT"
+    ],
+    "2": [
+     "H4-PARTIAL"
+    ]
+   },
+   "variants": {
+    "retest": [
+     "You and a neighbour want to share a cricket bat. What would you include in your agreement so it is clear and fair?",
+     "You and your sibling want to share a tablet. What would you include in your agreement so it is clear and fair?"
+    ],
+    "practice": [
+     "Your group is sharing art supplies. What should your agreement include?",
+     "Two friends are planning to share chores for a class party. What should their agreement include?"
+    ]
+   }
+  },
+  {
+   "id": "S8",
+   "text": "Choose one situation in which you could practice Think Win-Win this week. What specific action will you take, and how will you check whether you kept your promise?",
+   "competency_ids": [
+    "S8"
+   ],
+   "level": "medium",
+   "format": "written",
+   "rubric": {
+    "indicators": "Strong answer: names a realistic situation; describes observable action; identifies simple check-in/evidence (self-check, partner reminder, completed plan).",
+    "levels_text": "4: Situation, specific observable action and supportive accountability/check all present. 3: Specific action and context; check is less clear. 2: Goal is relevant but broad (“be nicer”) or lacks evidence/check. 1: Unrealistic, externally imposed or not linked to Think Win-Win. 0: Blank/irrelevant/shaming.",
+    "elements": [
+     "names a realistic situation",
+     "describes a specific observable action",
+     "says how they will check they kept the promise"
+    ]
+   },
+   "levels": {
+    "1": [
+     "WW-VAGUE"
+    ],
+    "2": [
+     "H4-PARTIAL"
+    ]
+   },
+   "variants": {
+    "retest": [
+     "Choose one situation at home where you could practise Think Win-Win this week. What will you do, and how will you check?",
+     "Choose one group activity at school this week. What specific action will you take, and how will you check?"
+    ],
+    "practice": [
+     "Write one Win-Win action for tomorrow and how you will know you did it.",
+     "Write one promise for this week that someone else could check."
+    ]
+   }
+  }
+ ]
+}

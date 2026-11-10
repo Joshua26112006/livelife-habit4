@@ -9,12 +9,11 @@ engine change. Field meanings follow the data model in section 7 of the concept 
   teaching_order   belief codes, earliest fixed first
   probes           {code: follow-up question}; separating_probes {frozenset(codes): question}
   interventions    {id: Intervention}; intervention_map {code: [intervention ids]}
-  read_answer      (item, raw text) -> trace {q, working, steps, findings[], result, shows_working}
-  parallel_item    (item, attempt) -> a new item testing the same competency, with its own expected answer
+  read_answer      optional plugin: (item, raw text) -> trace, for items with no "format"; otherwise the engine reads them (reading.py)
+  parallel_item    optional plugin: (item, attempt) -> a parallel item; otherwise items carry a variant bank
   subject          {subject, board, grade, chapter, source}: shown to teachers
   brief            the subject and curriculum context given to every AI call for this pack
   upload_hint      how answers should be written in the bulk file
-  written_type     the item type marked by rubric, if any; rubric_key maps such an item to its rubric
   sample           (pack, round) -> a synthetic CSV for trying the flow
 """
 from dataclasses import dataclass, field
@@ -38,15 +37,12 @@ class ChapterPack:
     separating_probes: Dict[FrozenSet[str], str]
     interventions: Dict[str, dict]
     intervention_map: Dict[str, List[str]]
-    read_answer: Callable[[dict, str], dict]
-    parallel_item: Callable[[dict, int], dict]
-    retest_types: Tuple[str, ...] = ()   # item types a V2 paper parallels; empty means every item
+    read_answer: Optional[Callable[[dict, str], dict]] = None
+    parallel_item: Optional[Callable[[dict, int], dict]] = None
     extension_task: str = ""
     subject: Dict[str, str] = field(default_factory=dict)
     brief: str = ""
     upload_hint: str = ""
-    written_type: str = ""
-    rubric_key: Optional[Callable[[dict], str]] = None
     sample: Optional[Callable[["ChapterPack", str], str]] = None
 
     @property
@@ -55,7 +51,16 @@ class ChapterPack:
 
     @property
     def retest_items(self):
-        return [item for item in self.items if not self.retest_types or item["type"] in self.retest_types]
+        """Items a V2 paper parallels: those with a variant bank, or computed by the plugin."""
+        return [i for i in self.items if i.get("variants") or (self.parallel_item and not i.get("format"))]
+
+    def read(self, item, raw):
+        from . import reading
+        return reading.read(item, raw) if item.get("format") else self.read_answer(item, raw)
+
+    def parallel(self, item, attempt):
+        from . import reading
+        return self.parallel_item(item, attempt) if self.parallel_item and not item.get("format") else reading.parallel(self, item, attempt)
 
     def describe(self):
         """The subject map a teacher can inspect: what this pack knows and how much of it is expert-reviewed."""
@@ -65,7 +70,7 @@ class ChapterPack:
             "competencies": self.competencies,
             "misconceptions": {c: {k: e[k] for k in ("name", "belief", "kind", "competency_ids")} for c, e in self.misconceptions.items()},
             "questions": [{"id": i["id"], "text": i["text"], "competency_ids": i["competency_ids"], "level": i.get("level"), "icon": i.get("icon"),
-                           "answer": str(i.get("correct") or i.get("key") or "Reasoned answer")} for i in self.items],
+                           "answer": str(i.get("correct") or i.get("answer") or i.get("key") or "Reasoned answer")} for i in self.items],
             "interventions": {"total": len(statuses), "approved": statuses.count("approved")},
         }
 

@@ -119,7 +119,7 @@ def _apply_ai_reading(pack, trace, hint):
 def diagnose_student(pack, sheet, items=None):
     """One response sheet -> traces, evidence summary, hypotheses, next step and the teacher's queue."""
     answers, hints = sheet.get("answers", {}), sheet.get("ai_hints", {})
-    traces = [_apply_ai_reading(pack, pack.read_answer(item, answers.get(item["id"], "")), hints.get(item["id"]))
+    traces = [_apply_ai_reading(pack, pack.read(item, answers.get(item["id"], "")), hints.get(item["id"]))
               for item in (pack.items if items is None else items)]
     teacher = [t["q"] for t in traces
                if t["result"] in NO_EVIDENCE_RESULTS or any(f["belief"] == UNMAPPED for f in t["findings"])]

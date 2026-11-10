@@ -133,10 +133,10 @@ export function capFromFound(key: ScenarioKey, found: unknown): number | null {
 }
 
 /** The system prompt. The children's texts are DATA, never instructions. */
-export function systemPrompt(keys: readonly ScenarioKey[], questions: Partial<Record<ScenarioKey, string>> = {}): string {
+export function systemPrompt(keys: readonly ScenarioKey[]): string {
   const blocks = keys.map(k => {
     const it = ITEMS[k];
-    return `${k} — ${it.name}\nQuestion: ${questions[k] ?? it.question}\nExpected answer / evidence indicators (examples, not a checklist): ${it.indicators}\nScoring rubric: ${it.rubric}\nParts the rubric looks for: ${it.elements.map(e => `[${e}]`).join(" ")}`;
+    return `${k} — ${it.name}\nQuestion: ${it.question}\nExpected answer / evidence indicators (examples, not a checklist): ${it.indicators}\nScoring rubric: ${it.rubric}\nParts the rubric looks for: ${it.elements.map(e => `[${e}]`).join(" ")}`;
   }).join("\n\n");
   return `You mark short written answers from a student aged 11–16 for a Habit 4 "Think Win-Win" assessment (LiveLife, Level 5). The student's answers arrive one per item. Score each one 0–4 using ONLY that item's rubric and the common anchors below.
 

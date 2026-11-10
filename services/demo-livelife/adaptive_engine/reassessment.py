@@ -10,7 +10,7 @@ SOUND_RESULTS = ("correct", "correct_reason_unclear")
 
 
 def build_paper(pack, attempt=1):
-    return [pack.parallel_item(item, attempt) for item in pack.retest_items]
+    return [pack.parallel(item, attempt) for item in pack.retest_items]
 
 
 def _score(traces, question_ids):

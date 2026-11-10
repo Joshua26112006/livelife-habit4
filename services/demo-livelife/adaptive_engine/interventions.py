@@ -8,7 +8,7 @@ CARD_FIELDS = ("objective", "steps", "exit_check")
 
 
 def _rank(pack, code, questions):
-    templates = [pack.item(q)["template"] for q in questions]
+    templates = [pack.item(q).get("template") or pack.item(q).get("format") for q in questions]
 
     def key(intervention_id):
         entry = pack.interventions[intervention_id]

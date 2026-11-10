@@ -65,7 +65,7 @@ def through_v2(pack="probability", marks=None, v2_marks=None):
 
 def habit4_marks(cid, module="m3", score=4):
     tasks = client.get(f"{API}/classes/{cid}/{module}/tasks").json()["tasks"]
-    return {t["id"]: {q: {"score": score, "evidence": "seen", "flag": False} for q in t["answers"]} for t in tasks if t["kind"] == "rubric"}
+    return {t["id"]: {"results": {q: {"score": score, "evidence": "seen", "flag": False} for q in t["questions"]}} for t in tasks if "questions" in t}
 
 
 # Upload
@@ -168,7 +168,7 @@ def test_habit4_marks_drive_the_diagnosis():
     cid = new_class("habit4")
     upload(cid, "v1", sample_bytes("habit4", "v1"))
     marks = habit4_marks(cid)
-    marks["H03"]["S5"]["score"] = 1
+    marks["H03"]["results"]["S5"]["score"] = 1
     feed = run(cid, "m3", marks, "ok").json()
     h03 = next(s for s in feed["students"] if s["student"] == "H03")
     assert h03["next"]["target"] == "WW-DISMISS"
@@ -177,8 +177,8 @@ def test_habit4_marks_drive_the_diagnosis():
 @pytest.mark.parametrize("bad", ["4", 7, -1, True, None])
 def test_invalid_marks_are_ignored(bad):
     sheets = [{"id": "s", "answers": {"S1": "text"}}]
-    item = [{"id": "S1", "type": "scenario"}]
-    merged, _ = ai_tasks.apply_marking(all_packs()["habit4"], sheets, item, {"s": {"S1": {"score": bad, "evidence": "x"}}})
+    item = [{"id": "S1", "format": "written"}]
+    merged, _ = ai_tasks.apply_marking(all_packs()["habit4"], sheets, item, {"s": {"results": {"S1": {"score": bad, "evidence": "x"}}}})
     assert merged[0]["answers"]["S1"]["score"] is None
 
 
@@ -308,7 +308,7 @@ def test_habit4_runs_end_to_end():
     cid = new_class("habit4")
     upload(cid, "v1", sample_bytes("habit4", "v1"))
     marks = habit4_marks(cid)
-    marks["H03"]["S5"]["score"] = 1
+    marks["H03"]["results"]["S5"]["score"] = 1
     run(cid, "m3", marks, "ok")
     for module in ("m4", "m5", "m6"):
         assert run(cid, module).status_code == 200
