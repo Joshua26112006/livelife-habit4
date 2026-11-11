@@ -23,10 +23,10 @@ GENERIC = "generic"
 STAGES = ("created", "paper_set", "uploaded", "keyed", "read", "identified", "mapped", "grouped", "planned", "approved", "paper_ready", "v2_uploaded",
           "scored", "profiled")
 # module: (stage it needs, stage it leads to)
-MODULES = {"m3": ("uploaded", "identified"), "m3-key": ("uploaded", "keyed"), "m3-read": ("keyed", "read"), "m3-errors": ("read", "identified"),
+MODULES = {"m3": ("uploaded", "identified"), "m3-key": ("uploaded", "keyed"), "m3-read": ("keyed", "read"), "m3-errors": ("read", "identified"), "m3-actions": ("identified", "identified"),
            "m3-insight": ("identified", "identified"), "m4": ("identified", "mapped"), "m5": ("mapped", "grouped"), "m6": ("grouped", "planned"),
            "m7-paper": ("approved", "paper_ready"), "m7-score": ("v2_uploaded", "scored"), "m8": ("scored", "profiled")}
-GENERIC_ONLY = ("m3-key", "m3-read", "m3-errors")
+GENERIC_ONLY = ("m3-key", "m3-read", "m3-errors", "m3-actions")
 PACK_ONLY = ("m3", "m7-paper", "m7-score", "m8")
 FEEDS = ("m3", "m4", "m5", "m6", "m7-paper", "m7-score", "m8")
 SETTINGS_OPEN = ("created", "paper_set", "uploaded", "keyed", "read", "identified", "mapped", "grouped")
@@ -46,6 +46,7 @@ class Workflow:
     def __init__(self, class_id):
         self.class_id, self.pack, self.name, self.cycle = class_id, None, "", None
         self.generic, self.paper, self.read_sheets, self.overrides, self.class_code, self.pack_key = False, None, [], {}, "", ""
+        self.actions = {}
         self.stage, self.seq = "created", 0
         self.v1_sheets, self.v2_sheets = [], []
         self.upload_reports, self.ai, self.rationale = {}, {}, {}
@@ -118,6 +119,10 @@ class Workflow:
         sheets, self.ai["m3_failed"] = ai_tasks.apply_marking(self.pack, self.v1_sheets, self.pack.items, self._results(p))
         self.cycle.run_diagnostic(sheets)
         self.stage = "identified"
+
+    def _on_m3_actions(self, p):
+        self.ai["m3-actions"] = p.get("status", "off")
+        self.actions = generic.apply_actions(self.cycle.diagnoses, self._results(p))
 
     def _on_m3_insight(self, p):
         self.ai["m3-insight"] = p.get("status", "off")
@@ -202,7 +207,8 @@ class Workflow:
         rows = self.cycle.class_view()["misconceptions"]
         assessment["thinking_errors"] = [{"code": r["code"], "name": r["name"], "kind": r["kind"], "thinks": self.pack.misconceptions[r["code"]]["belief"],
                                           "looks_like": self.pack.misconceptions[r["code"]].get("looks_like", ""), "students": r["students"],
-                                          "share_percent": r["share_percent"], "owners": r["owners"], "fixes": r["remedies"]} for r in rows]
+                                          "share_percent": r["share_percent"], "owners": r["owners"], "fixes": r["remedies"], "fix": self._fix(r["code"])}
+                                         for r in rows]
         assessment["groups"] = [{"group_id": g["group_id"], "need": g["need"], "code": g["misconception_id"], "students": g["student_ids"],
                                  "owners": g.get("owners", []), "delivery": g.get("delivery")} for g in self.cycle.groups] if STAGES.index(self.stage) >= STAGES.index("grouped") else []
         saved.set_doc(f"{base}/assessments/{self.class_id}", assessment)
@@ -224,6 +230,7 @@ class Workflow:
                                      "status": entry["status"], "questions": entry["questions"]}
                                     for code, entry in diagnosis["summary"].items() if code in self.pack.misconceptions],
                 "next": diagnosis["next"],
+                "actions": self.actions.get(student),
             })
 
     def _need(self, *stages):
@@ -297,6 +304,8 @@ class Workflow:
             return generic.read_tasks(self.paper, self.v1_sheets)
         if module == "m3-errors":
             return generic.error_tasks(self.paper, self.read_sheets)
+        if module == "m3-actions":
+            return generic.action_tasks(self.paper, self.pack, self.cycle.diagnoses)
         if module == "m3":
             return ai_tasks.marking_tasks(self.pack, self.v1_sheets, self.pack.items)
         if module == "m3-insight":
@@ -336,7 +345,8 @@ class Workflow:
             row["examples"] = insights.examples(questions, row["code"])
             row["why"] = self.pack.misconceptions[row["code"]]["belief"]
             row["looks_like"] = self.pack.misconceptions[row["code"]].get("looks_like", "")
-        return {"ai": self.ai.get("m3"), "ai_insight": self.ai.get("m3-insight"), "ai_failed_students": self.ai.get("m3_failed", 0), "class": class_view,
+            row["fix"] = self._fix(row["code"])
+        return {"ai": self.ai.get("m3"), "ai_actions": self.ai.get("m3-actions"), "actions": self.actions, "ai_insight": self.ai.get("m3-insight"), "ai_failed_students": self.ai.get("m3_failed", 0), "class": class_view,
                 "overview": insights.overview(self.pack, cycle.diagnoses, questions), "questions": questions,
                 "students": [{k: d[k] for k in ("student", "summary", "next", "teacher", "hypotheses", "two_explanations")} | {"answers": self._answers(d)}
                              for d in cycle.diagnoses.values()]}
@@ -360,6 +370,16 @@ class Workflow:
 
     def _feed_m3_errors(self):
         return self._feed_m3()
+
+    def _feed_m3_actions(self):
+        return self._feed_m3()
+
+    def _fix(self, code):
+        """How one thinking error is fixed: teaching steps, a class activity, and a question that checks it."""
+        entry = self.pack.misconceptions[code]
+        intervention = next((self.pack.interventions[i] for i in self.pack.intervention_map.get(code, ()) if i in self.pack.interventions), {})
+        return {"steps": list(intervention.get("steps") or []), "activity": entry.get("activity") or intervention.get("objective"),
+                "check": entry.get("exit_check") or intervention.get("exit_check"), "teacher": entry.get("teacher"), "student": entry.get("student")}
 
     def _paper_view(self):
         if not self.pack:

@@ -281,3 +281,43 @@ def test_the_same_flow_writes_firestore_documents():
     assert wf.load(cid).stage == "identified"  # rebuilt from the events kept in Firestore
     assert f"classes/10B/students/student2/assessments/{cid}" in fake.docs and f"runs/{cid}/events/000001" in fake.docs
     assert wf.class_records("10 B")["students"]["student3"]["assessments"][cid]["next"]["action"] == "group"
+
+
+# Which model: judgement goes to the reasoning model
+def test_judgement_steps_use_the_reasoning_model():
+    p = paper()
+    assert {t["tier"] for t in generic.key_tasks(p)} == {"reasoning"}
+    assert generic.read_tasks(keyed(), [sheet(Q1="3/5")])[0]["tier"] == "fast"  # numbers are compared by rule; the model only explains
+    words = generic.parse_paper([{"questionNumber": 1, "questionText": "Why is the sky blue?", "answer": "Scattering of light"}])
+    assert generic.read_tasks(words, [{"id": "s", "answers": {"Q1": "Because of the sea"}}])[0]["tier"] == "reasoning"
+    assert generic.error_tasks(keyed(), wrong_sheets())[0]["tier"] == "reasoning"
+    from adaptive_engine import ai_tasks
+    from adaptive_engine.packs import all_packs
+    habit = all_packs()["habit4"]
+    assert ai_tasks.marking_tasks(habit, [{"id": "s", "answers": {"S1": "We both choose."}}], habit.items)[0]["tier"] == "reasoning"
+
+
+# Each thinking error comes with its fix
+def test_each_error_carries_its_fix():
+    full = {**E, "steps": ["List every card", "Tick the ones that fit", "Count the ticks", "Check with a second method"],
+            "activity": "Sort a real deck into fits / does not fit.", "check": "P(a black king)? Answer 1/26."}
+    catalogue, sheets = generic.apply_errors(keyed(), wrong_sheets(), error_reply([full], {"A2": "1"}))
+    pack = generic.build_pack(keyed(), catalogue, sheets)
+    assert pack.misconceptions["E1"]["exit_check"] == "P(a black king)? Answer 1/26." and pack.misconceptions["E1"]["activity"].startswith("Sort")
+    assert pack.interventions["INT-E1"]["steps"][3] == "Check with a second method"
+
+
+def test_fix_and_actions_reach_the_feed_and_the_records():
+    cid, feed = analysed()
+    row = next(r for r in feed["class"]["misconceptions"] if r["code"] == "E1")
+    assert row["fix"]["steps"] == E["steps"] and row["fix"]["teacher"] == E["teacher"]
+    tasks = client.get(f"{API}/classes/{cid}/m3-actions/tasks").json()["tasks"]
+    assert [t["id"] for t in tasks] == ["actions:1"] and "student2" in tasks[0]["user"] and "student1" not in tasks[0]["user"]
+    reply = {"actions:1": {"students": {"student2": {"actions": ["Q1: put all 8 balls at the bottom.", "Q2: count 5 to 100 as 96 cards."], "try_next": "P(red) with 2 red, 4 blue?"},
+                                        "student9": {"actions": ["x"]}, "student3": {"actions": ["You are a weak student."]}}}}
+    feed = run(cid, "m3-actions", reply).json()
+    assert set(feed["actions"]) == {"student2"} and feed["actions"]["student2"]["actions"][1].startswith("Q2")
+    body = client.get(f"{API}/records/10B").json()
+    s2 = body["students"]["student2"]["assessments"][cid]
+    assert s2["actions"]["try_next"] == "P(red) with 2 red, 4 blue?"
+    assert body["assessments"][cid]["thinking_errors"][0]["fix"]["steps"]

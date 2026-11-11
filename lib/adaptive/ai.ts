@@ -5,7 +5,13 @@
  */
 import { createLimiter } from "@/lib/livelifeDemo/limits";
 
+// Two tiers. Each task says which it needs: "reasoning" for working out answers, judging written answers, naming thinking
+// errors and their fixes, and each student's next steps; "fast" for the rest (short explanations and summaries).
 const MODEL = process.env.DEMO_LIVELIFE_MODEL || "openai/gpt-4o";
+const REASONING_MODEL = process.env.DEMO_LIVELIFE_REASONING_MODEL || "anthropic/claude-opus-5.5";
+const REASONING_EFFORT = process.env.DEMO_LIVELIFE_REASONING_EFFORT || "high";
+// Thinking tokens count toward max_tokens, so a reasoning task gets this much on top of the room its reply needs.
+const REASONING_BUDGET = 16000;
 const API_URL = process.env.DEMO_LIVELIFE_API_URL || "https://openrouter.ai/api/v1/chat/completions";
 const SERVICE = (process.env.DEMO_SERVICE_URL || "http://localhost:8080").replace(/\/+$/, "");
 const ENGINE = `${SERVICE}/demo-livelife/adaptive-engine/api`;
@@ -16,7 +22,7 @@ const MAX_TASKS = 220;
 // One unit is one model call. A class of 40 is about 40 calls for marking and a few per module.
 const limiter = createLimiter({ perAddressPerHour: 500, perDay: 2000 });
 
-type JsonTask = { id: string; kind: "json"; system: string; user: string; max_tokens: number };
+type JsonTask = { id: string; kind: "json"; system: string; user: string; max_tokens: number; tier?: "reasoning" | "fast" };
 type Task = JsonTask;
 
 function aiEnabled(): boolean {
@@ -25,34 +31,54 @@ function aiEnabled(): boolean {
 
 const ATTEMPTS = 3;
 
-/** A dropped connection or a provider hiccup should not cost a whole module its AI step. */
-async function chat(system: string, user: string, maxTokens: number): Promise<Record<string, unknown>> {
+/** A dropped connection or a provider hiccup should not cost a whole module its AI step. A reasoning task the reasoning
+ * model keeps refusing or failing gets one last try on the fast model, so the step still runs. */
+async function chat(task: Task): Promise<Record<string, unknown>> {
   for (let attempt = 1; ; attempt += 1) {
     try {
-      return await chatOnce(system, user, maxTokens);
+      return await chatOnce(task);
     } catch (err) {
-      if (attempt >= ATTEMPTS) throw err;
+      if (attempt >= ATTEMPTS) {
+        if (task.tier !== "reasoning") throw err;
+        console.error("[adaptive] reasoning model failed; using the fast model", err instanceof Error ? err.message.slice(0, 60) : "error");
+        return chatOnce({ ...task, tier: "fast" });
+      }
       await new Promise(done => setTimeout(done, 800 * attempt));
     }
   }
 }
 
-async function chatOnce(system: string, user: string, maxTokens: number): Promise<Record<string, unknown>> {
+/** The JSON object in a reply, even when a model wraps it in a code fence or a sentence. */
+function parseReply(content: string): Record<string, unknown> {
+  try {
+    return JSON.parse(content);
+  } catch {
+    const start = content.indexOf("{"), end = content.lastIndexOf("}");
+    if (start < 0 || end <= start) throw new Error("no JSON in reply");
+    return JSON.parse(content.slice(start, end + 1));
+  }
+}
+
+async function chatOnce(task: Task): Promise<Record<string, unknown>> {
+  const reasoning = task.tier === "reasoning";
   const res = await fetch(API_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${process.env.OPENROUTER_API_KEY || process.env.OPENAI_API_KEY}` },
     body: JSON.stringify({
-      model: MODEL,
-      temperature: 0,
+      model: reasoning ? REASONING_MODEL : MODEL,
+      ...(reasoning ? { reasoning: { effort: REASONING_EFFORT } } : { temperature: 0 }),
       response_format: { type: "json_object" },
-      max_tokens: maxTokens,
-      messages: [{ role: "system", content: system }, { role: "user", content: user }],
+      max_tokens: task.max_tokens + (reasoning ? REASONING_BUDGET : 0),
+      messages: [{ role: "system", content: task.system }, { role: "user", content: task.user }],
     }),
-    signal: AbortSignal.timeout(90_000),
+    signal: AbortSignal.timeout(reasoning ? 240_000 : 90_000),
   });
   if (!res.ok) throw new Error(`provider ${res.status}`);
   const body = await res.json();
-  return JSON.parse(body.choices?.[0]?.message?.content ?? "{}");
+  const choice = body.choices?.[0];
+  // A refused or empty reply is a failure, not an empty answer: otherwise the step would look done with nothing in it.
+  if (!choice?.message?.content) throw new Error(`no reply (${choice?.finish_reason ?? "unknown"})`);
+  return parseReply(choice.message.content);
 }
 
 async function runAll(tasks: Task[], address: string) {
@@ -64,7 +90,7 @@ async function runAll(tasks: Task[], address: string) {
       const task = tasks[next++];
       try {
         if (!limiter.take(address).ok) throw new Error("rate limited");
-        results[task.id] = await chat(task.system, task.user, task.max_tokens);
+        results[task.id] = await chat(task);
       } catch (err) {
         failed += 1;
         // Student text is never logged.

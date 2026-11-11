@@ -21,8 +21,13 @@ def safe_text(value, limit=MAX_TEXT):
     return "" if any(word in text.lower() for word in BANNED) else text
 
 
-def _task(pack, task_id, instruction, material, max_tokens=700):
-    return {"id": str(task_id), "kind": "json", "system": f"{GUARD} Subject and scope: {pack.brief} {instruction}", "user": material, "max_tokens": max_tokens}
+# "reasoning" tasks go to the stronger model (see lib/adaptive/ai.ts): judging written answers. The rest are "fast".
+REASONING, FAST = "reasoning", "fast"
+
+
+def _task(pack, task_id, instruction, material, max_tokens=700, tier=FAST):
+    return {"id": str(task_id), "kind": "json", "system": f"{GUARD} Subject and scope: {pack.brief} {instruction}", "user": material,
+            "max_tokens": max_tokens, "tier": tier}
 
 
 def _catalogue(pack):
@@ -58,7 +63,7 @@ def marking_tasks(pack, sheets, items):
         pending = [(i, sheet["answers"].get(i["id"], "")) for i in written]
         pending = [(i, text) for i, text in pending if isinstance(text, str) and text.strip()]
         if pending:
-            task = _task(pack, sheet["id"], RUBRIC_RULES, "\n\n".join(_rubric_block(i, text) for i, text in pending), 1600)
+            task = _task(pack, sheet["id"], RUBRIC_RULES, "\n\n".join(_rubric_block(i, text) for i, text in pending), 1600, REASONING)
             tasks.append({**task, "questions": [i["id"] for i, _ in pending]})
     for sheet in sheets:
         unplaced = []

@@ -69,6 +69,7 @@ details summary { cursor: pointer; color: var(--accent); font-size: 14px; } deta
 .ba { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; } @media (max-width: 960px) { .ba { grid-template-columns: 1fr; } }
 .vrow { display: grid; grid-template-columns: 58px minmax(0, 1fr); gap: 8px; align-items: start; font-size: 14px; } .chip { border-radius: 8px; padding: 3px 9px; font-size: 13px; font-weight: 600; color: #fff; display: inline-block; } .chip.t { background: transparent; color: var(--secure); border: 2px dashed var(--secure); }
 .who { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 13px; color: var(--muted); } .who select { font-size: 13px; padding: 3px 6px; max-width: 100%; } .mgrid .who select { width: 100%; }
+.fix { background: var(--accent-soft); border-radius: 10px; padding: 10px 12px; font-size: 14px; display: grid; gap: 6px; } .fix ol { margin: 0; padding-left: 20px; }
 .draft { font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 6px; background: color-mix(in srgb, var(--slip) 22%, transparent); color: var(--ink); white-space: nowrap; }
 .cmp { display: grid; grid-template-columns: minmax(0, 1fr) 150px; gap: 10px; align-items: center; font-size: 14px; } .two { display: grid; gap: 3px; } .two div { height: 9px; border-radius: 4px; } .two .a { background: var(--wrong); } .two .b { background: var(--secure); }
 #busy { position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%); z-index: 9; display: none; padding: 10px 18px; border-radius: 999px; background: var(--ink); color: var(--surface); font-size: 14px; }
@@ -121,7 +122,7 @@ async function refresh() { if (C) C = await call(`${API}/classes/${C.class_id}`)
 // Each action runs the modules behind it, so the teacher sees steps, not modules.
 // An uploaded paper: work out missing answers, mark the working, name the thinking errors. A subject pack: one step.
 const fromKey = async () => { await module_("read-answers"); await fromRead(); };
-const fromRead = async () => { await module_("thinking-errors"); await module_("insights").catch(() => {}); };
+const fromRead = async () => { await module_("thinking-errors"); await module_("student-actions").catch(() => {}); await module_("insights").catch(() => {}); };
 // Answers the AI worked out are shown to the teacher before any marking; a paper that brought all its answers goes straight on.
 const analyse = async () => { if (C.generic) { const k = await module_("answer-key"); if (k.paper.some(p => !p.answer || p.answer_source === "ai")) return; await fromKey(); } else { await module_("identify"); await module_("insights").catch(() => {}); } };
 async function confirmKey() {
@@ -244,7 +245,7 @@ function viewReveals() {
   const who = r => { const now = r.owner_source === "set" ? r.owners.join(",") : "auto";
     return C.settings_open ? `<label class="who">Who fixes it <select onchange="setOwner('${esc(r.code)}',this.value)">${OWNER_SETS.map(([v,l]) => `<option value="${v}" ${v === now ? "selected" : ""}>${l}</option>`).join("")}${OWNER_SETS.some(x => x[0] === now) ? "" : `<option selected>${esc(r.owners.join(", "))}</option>`}</select></label>` : `<span class="who">Fixed by: ${r.owners.map(o => OWNER[o][0]).join(", ")}</span>`; };
   const others = other.length ? `<p class="small muted">Not thinking errors, so practice only: ${other.map(r => `${esc(r.name)} (${plural(r.students.length, "student")}: ${esc(r.students.join(", "))})`).join("; ")}.</p>` : "";
-  return chapter("reveals","3 · WHAT IT REVEALS","Wrong answers trace back to a few thinking errors",`Across all ${f.overview.answers_read} answers, most wrong answers come from ${rows.length === 1 ? "one pattern" : `${rows.length} patterns`}. Each one has a cause we can name and fix.`, `<div class="mgrid">${rows.map(r => `<div class="panel"><span class="small muted">Thinking error</span><h3>${esc(r.name)}</h3><div class="pct"><b class="num">${Math.round(r.share_percent)}%</b><span class="muted">${r.students.length} of ${n} students</span></div><div class="bar"><div style="width:${r.share_percent}%"></div></div><p style="font-size:14px"><b>What they think:</b> ${esc(r.why)}</p>${r.looks_like ? `<p style="font-size:14px"><b>In their answers:</b> ${esc(r.looks_like)}</p>` : ""}<p style="font-size:14px"><b>Students:</b> ${r.students.map(s => esc(s) + seenOnce(r.evidence?.[s])).join(", ")}</p>${r.examples.map(x => `<div class="ex">${esc(x.q)}: <span class="hand" style="font-size:20px">${esc(x.sample.split("\n").join(" → "))}</span></div>`).join("")}${who(r)}</div>`).join("")}</div>${others}${probes()}`);
+  return chapter("reveals","3 · WHAT IT REVEALS","Wrong answers trace back to a few thinking errors",`Across all ${f.overview.answers_read} answers, most wrong answers come from ${rows.length === 1 ? "one pattern" : `${rows.length} patterns`}. Each one has a cause we can name and fix.`, `<div class="mgrid">${rows.map(r => `<div class="panel"><span class="small muted">Thinking error</span><h3>${esc(r.name)}</h3><div class="pct"><b class="num">${Math.round(r.share_percent)}%</b><span class="muted">${r.students.length} of ${n} students</span></div><div class="bar"><div style="width:${r.share_percent}%"></div></div><p style="font-size:14px"><b>What they think:</b> ${esc(r.why)}</p>${r.looks_like ? `<p style="font-size:14px"><b>In their answers:</b> ${esc(r.looks_like)}</p>` : ""}${fixBox(r.fix)}<p style="font-size:14px"><b>Students:</b> ${r.students.map(s => esc(s) + seenOnce(r.evidence?.[s])).join(", ")}</p>${r.examples.map(x => `<div class="ex">${esc(x.q)}: <span class="hand" style="font-size:20px">${esc(x.sample.split("\n").join(" → "))}</span></div>`).join("")}${who(r)}</div>`).join("")}</div>${others}${probes()}`);
 }
 function probes() {
   const open = C.feeds.m3.students.filter(s => s.next.action === "probe" && C.stage === "identified");
@@ -255,7 +256,24 @@ function viewFixes() {
   if (!reached("identified")) return "";
   const rows = C.feeds.m3.class.misconceptions;
   const col = o => { const list = rows.filter(r => r.owners.includes(o)); return `<div class="panel own" style="--oc:var(${OWNER[o][1]})"><h3><span>${OWNER[o][0]}</span><span class="num">${list.length}</span></h3>${list.length ? list.map(r => `<div class="act"><span class="tag">${esc(r.name)} · ${plural(r.students.length,"student")}${r.owners[0] === o ? " · main fix" : ""}</span><span>${r.remedies[o] ? esc(r.remedies[o]) : '<span class="gaps">Awaiting expert draft.</span>'}</span></div>`).join("") : '<p class="small muted">Nothing routed here in this class.</p>'}</div>`; };
-  return chapter("fixes","4 · WHO FIXES IT","Each error goes to the person who can fix it","How many students share an error decides where the main fix goes. If a quarter of the class or more makes it, the cause is in the material, so we change our content.", `<div class="rule"><span class="r" style="background:var(--content)">${C.policy.content_share}% or more → our content</span><span class="r" style="background:var(--teacher)">${C.policy.teacher_share}% to under ${C.policy.content_share}% → teacher</span><span class="r" style="background:var(--student)">Under ${C.policy.teacher_share}%, or a slip → student</span><span class="small muted">Every affected student also gets their own practice card.</span></div><div class="owners">${col("content")}${col("teacher")}${col("student")}</div>${rulesPanel()}`);
+  return chapter("fixes","4 · WHO FIXES IT","Each error goes to the person who can fix it","How many students share an error decides where the main fix goes. If a quarter of the class or more makes it, the cause is in the material, so we change our content.", `<div class="rule"><span class="r" style="background:var(--content)">${C.policy.content_share}% or more → our content</span><span class="r" style="background:var(--teacher)">${C.policy.teacher_share}% to under ${C.policy.content_share}% → teacher</span><span class="r" style="background:var(--student)">Under ${C.policy.teacher_share}%, or a slip → student</span><span class="small muted">Every affected student also gets their own practice card.</span></div><div class="owners">${col("content")}${col("teacher")}${col("student")}</div>${studentsPanel()}${rulesPanel()}`);
+}
+function fixBox(f) {
+  if (!f || !(f.steps?.length || f.teacher)) return "";
+  return `<div class="fix"><b>How to fix it</b>${f.steps?.length ? `<ol>${f.steps.map(x => `<li>${esc(x)}</li>`).join("")}</ol>` : `<span>${esc(f.teacher)}</span>`}${f.activity ? `<span><b>Class activity:</b> ${esc(f.activity)}</span>` : ""}${f.check ? `<span><b>Check it's fixed:</b> ${esc(f.check)}</span>` : ""}</div>`;
+}
+// Each student's own next steps in this class: written from their answers when the AI step ran, otherwise each error's student fix.
+function studentPlan(s) {
+  const own = C.feeds.m3.actions?.[s.student];
+  if (own) return { actions: own.actions, next: own.try_next, ai: true };
+  const codes = [...new Set(s.answers.map(a => a.error).filter(Boolean))], rows = C.feeds.m3.class.misconceptions;
+  return { actions: codes.map(c => rows.find(r => r.code === c)?.remedies?.student || rows.find(r => r.code === c)?.fix?.student).filter(Boolean), next: "" };
+}
+function studentsPanel() {
+  const f = C.feeds.m3, list = f.students.map(s => [s, studentPlan(s)]).filter(([, p]) => p.actions.length);
+  if (!list.length) return "";
+  const errs = s => [...new Set(s.answers.map(a => a.error).filter(Boolean))].map(nameOf).join(", ");
+  return `<div class="panel"><h3>What each student does in this class</h3><p class="small muted">Written from each student's own answers${list.some(([, p]) => p.ai) ? ' <span class="draft">AI draft: check</span>' : ""}.</p>${table(["Student","Thinking errors","What to do","Try next"], list.map(([s, p]) => [esc(s.student), esc(errs(s)), `<ol class="t">${p.actions.map(a => `<li>${esc(a)}</li>`).join("")}</ol>`, esc(p.next)]))}</div>`;
 }
 function rulesPanel() {
   if (!C.settings_open) return "";
@@ -299,12 +317,13 @@ function oneStudent() {
   const v1 = `<div class="panel"><h3>Version 1</h3>${s.answers.map(a => `<div class="vrow"><span>${esc(a.q)}</span><span><span class="chip" style="background:${color(a.level)}">${esc(a.label)}</span><br><span class="hand" style="font-size:20px">${esc(a.working.split("\n").join(" → "))}</span></span></div>`).join("")}</div>`;
   const codes = [...new Set(s.answers.map(a => a.error).filter(Boolean))], rows = f3.class.misconceptions;
   const items = codes.flatMap(c => { const r = rows.find(x => x.code === c); return !r ? [] : r.owners.flatMap(o => r.remedies[o] ? [`<div class="vrow" style="grid-template-columns:78px minmax(0,1fr)"><b style="color:var(${OWNER[o][1]})">${o === "student" ? esc(s.student) : OWNER[o][0]}</b><span>${esc(r.remedies[o])}</span></div>`] : []); });
-  const plan = `<div class="panel"><h3>The plan</h3>${items.join("") || '<p class="small muted">Nothing to fix here: on to extension work.</p>'}</div>`;
+  const own = studentPlan(s), mine = own.ai ? `<div class="vrow" style="grid-template-columns:78px minmax(0,1fr)"><b style="color:var(--student)">${esc(s.student)}</b><span><ol class="t">${own.actions.map(a => `<li>${esc(a)}</li>`).join("")}</ol>${own.next ? `<b>Try next:</b> ${esc(own.next)}` : ""}</span></div>` : "";
+  const plan = `<div class="panel"><h3>The plan</h3>${mine}${items.join("") || '<p class="small muted">Nothing to fix here: on to extension work.</p>'}</div>`;
   const answers = cmp?.answers[s.student], row = cmp?.comparison.students.find(x => x.student === s.student);
   const paper = C.feeds["m7-paper"]?.paper || [];
   const v2 = answers ? `<div class="panel"><h3>Version 2</h3>${answers.map(a => `<div class="vrow"><span>${esc(a.q)}</span><span><span class="chip" style="background:${color(a.level)}">${esc(a.label)}</span><br><span class="hand" style="font-size:20px">${esc(a.working.split("\n").join(" → "))}</span></span></div>`).join("")}<p class="small"><b>${row.v1_percent ?? "n/a"}% → ${row.v2_percent ?? "n/a"}%</b> solved soundly on the same competencies.</p>${m8?.narrative.students[s.student] ? `<p class="small">${esc(m8.narrative.students[s.student])} <span class="draft">AI draft</span></p>` : ""}</div>`
     : `<div class="panel"><h3>Version 2 · re-test targets</h3>${cmp ? '<p class="small muted">Did not sit version 2.</p>' : s.answers.filter(a => !["secure","blank"].includes(a.level)).map(a => `<div class="vrow"><span>${esc(a.q)}</span><span class="chip t">Show the method on a new question of this kind</span></div>`).join("") || '<p class="small muted">Hold: correct, method shown.</p>'}<p class="small muted">New questions of the same kind, not the same ones.${paper.length ? "" : " The paper is created after the plan is approved."}</p></div>`;
-  return v1 + plan + v2;
+  return v1 + plan + (C.generic ? "" : v2);
 }
 function viewOne() {
   const f = C.feeds.m3; if (!f) return "";
