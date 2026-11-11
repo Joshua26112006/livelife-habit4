@@ -35,6 +35,12 @@ def sheet(sid="X", mcq=None, scores=None):
 
 
 # The pack is data, and it matches the real assessment
+def test_habit4_names_a_few_explainable_thinking_errors():
+    beliefs = [e for e in PACK.misconceptions.values() if e["kind"] == "belief"]
+    assert len(beliefs) == 3 and all(e["looks_like"] and e["teacher"] for e in beliefs)
+    assert PACK.misconceptions["WW-NAMES"]["kind"] == "fact"  # not knowing a name is a gap, not a thinking error
+
+
 def test_habit4_has_no_code():
     assert sorted(p.name for p in (ROOT / "adaptive_engine/packs/habit4").iterdir() if p.suffix == ".py") == []
 
@@ -60,6 +66,8 @@ def test_every_wrong_option_is_mapped_and_every_rubric_is_present():
     (lambda d: d["intervention_map"].update({"WW-NAMES": ["INT-NOPE"]}), "unknown intervention INT-NOPE"),
     (lambda d: d["teaching_order"].append("NOPE"), "teaching order: unknown code"),
     (lambda d: d.pop("brief"), "missing 'brief'"),
+    (lambda d: d["misconceptions"]["WW-NOT-ASKING"].pop("looks_like"), "WW-NOT-ASKING: say what it looks like"),
+    (lambda d: d["misconceptions"].update({f"X{n}": {**d["misconceptions"]["WW-NOT-ASKING"]} for n in range(3)}), "6 thinking errors; keep to 5"),
 ])
 def test_a_broken_pack_is_refused_with_the_reason(break_it, message):
     data = copy.deepcopy(DATA)
@@ -74,14 +82,14 @@ def test_all_knowledge_is_draft_so_nothing_is_recommended_by_default():
 
 
 # The engine's reader: choice and written
-@pytest.mark.parametrize("raw, result, beliefs", [("C", "correct", []), ("c ", "correct", []), ("B", "wrong", ["WW-GIVE-IN"]), ("", "blank", []), ("Z", "unreadable", [])])
+@pytest.mark.parametrize("raw, result, beliefs", [("C", "correct", []), ("c ", "correct", []), ("B", "wrong", ["WW-SOMEONE-LOSES"]), ("", "blank", []), ("Z", "unreadable", [])])
 def test_choice_reading(raw, result, beliefs):
     trace = PACK.read(ITEM["K1"], raw)
     assert (trace["result"], [f["belief"] for f in trace["findings"]]) == (result, beliefs)
 
 
 @pytest.mark.parametrize("answer, result, beliefs", [
-    (rubric(4), "correct", []), (rubric(3), "correct", []), (rubric(2), "wrong", ["H4-PARTIAL"]), (rubric(1), "wrong", ["WW-DISMISS"]),
+    (rubric(4), "correct", []), (rubric(3), "correct", []), (rubric(2), "wrong", ["H4-PARTIAL"]), (rubric(1), "wrong", ["WW-NOT-ASKING"]),
     (rubric(0), "irrelevant", []), (rubric(0, flag=True), "flagged_for_review", []), (rubric(None), "unreadable", []),
     (rubric(4, text=""), "blank", []), ("text with no score yet", "unreadable", []),
 ])
@@ -92,17 +100,28 @@ def test_written_reading(answer, result, beliefs):
 
 def test_written_low_plus_matching_choice_is_confirmed():
     diagnosis = diagnose_student(PACK, sheet(mcq={"K5": "C"}, scores={"S5": 1}))
-    assert diagnosis["summary"]["WW-DISMISS"]["status"] == "confirmed" and diagnosis["next"]["target"] == "WW-DISMISS"
+    assert diagnosis["summary"]["WW-NOT-ASKING"]["status"] == "confirmed" and diagnosis["next"]["target"] == "WW-NOT-ASKING"
 
 
-def test_choice_alone_only_triggers_a_probe():
+def test_choice_alone_groups_the_student_as_a_candidate():
     diagnosis = diagnose_student(PACK, sheet(mcq={"K8": "B"}))
+    assert diagnosis["next"]["action"] == "group" and diagnosis["next"]["evidence"] == "candidate"
+
+
+def test_choice_alone_triggers_a_probe_when_the_class_asks_for_confirmed_evidence():
+    diagnosis = diagnose_student(PACK, sheet(mcq={"K8": "B"}), policy=PACK.settings({"group_from": "confirmed"}))
     assert diagnosis["next"]["action"] == "probe" and diagnosis["next"]["probe"]
 
 
+def test_stronger_evidence_is_grouped_before_weaker():
+    # WW-SOMEONE-LOSES is earlier in teaching order but rests on one answer; WW-LOOSE-PROMISE is confirmed on two.
+    diagnosis = diagnose_student(PACK, sheet(mcq={"K1": "B", "K6": "A"}, scores={"S6": 1}))
+    assert diagnosis["next"]["target"] == "WW-LOOSE-PROMISE" and diagnosis["next"]["held_for_later"] == ["WW-SOMEONE-LOSES"]
+
+
 def test_rubric_level_with_two_meanings_needs_a_probe_unless_settled():
-    assert diagnose_student(PACK, sheet(scores={"S1": 1}))["two_explanations"]["S1"]["probe"]
-    assert diagnose_student(PACK, sheet(mcq={"K1": "B"}, scores={"S1": 1}))["two_explanations"]["S1"]["settled_by"] == "WW-GIVE-IN"
+    assert diagnose_student(PACK, sheet(scores={"S2": 1}))["two_explanations"]["S2"]["probe"]
+    assert diagnose_student(PACK, sheet(mcq={"K1": "B"}, scores={"S2": 1}))["two_explanations"]["S2"]["settled_by"] == "WW-SOMEONE-LOSES"
 
 
 def test_partly_shown_means_practice_not_reteaching():
@@ -152,7 +171,7 @@ NUMERIC = {
 
 
 def numeric_pack():
-    entry = lambda kind: {"name": kind, "belief": kind, "kind": kind, "competency_ids": ["C1"], "student": "s", "teacher": "t", "content": "c", "exit_check": "e"}
+    entry = lambda kind: {"name": kind, "belief": kind, "looks_like": kind, "kind": kind, "competency_ids": ["C1"], "student": "s", "teacher": "t", "content": "c", "exit_check": "e"}
     intervention = {"title": "T", "objective": None, "steps": ["s"], "duration_minutes": [5, 10], "assets": [], "item_types": [], "exit_check": None, "review_status": "approved", "version": "1"}
     return build({"chapter_id": "pct", "version": "1", "subject": {"subject": "Maths", "board": "B", "grade": "8", "chapter": "Percent", "source": "S"},
                   "brief": "Grade 8 percentages.", "competencies": {"C1": {"name": "Find a price after discount", "prerequisites": []}},
@@ -180,5 +199,5 @@ def test_a_data_only_subject_runs_through_the_modules():
     pack = numeric_pack()
     cycle = ClassCycle(pack, "c")
     cycle.run_diagnostic([{"id": "A", "answers": {"N1": "25% of 400 is 100", "N2": "the discount is 100"}}, {"id": "B", "answers": {"N1": "300", "N2": "300"}}])
-    assert cycle.diagnoses["A"]["next"] == {"action": "group", "target": "OFF", "held_for_later": []}
+    assert cycle.diagnoses["A"]["next"] == {"action": "group", "target": "OFF", "held_for_later": [], "evidence": "confirmed"}
     assert cycle.groups[0]["student_ids"] == ["A"] and cycle.cohorts[0]["student_ids"] == ["B"]

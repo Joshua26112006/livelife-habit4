@@ -1,6 +1,7 @@
 """The class workflow through its API: bulk upload, one feed per module, teacher decisions, V2 and comparison, and saved state.
 Run from services/demo-livelife:  python -m pytest test_cases"""
 import io
+import json
 import sys
 from pathlib import Path
 
@@ -25,8 +26,11 @@ def database(tmp_path, monkeypatch):
     monkeypatch.setenv("ADAPTIVE_DB", str(tmp_path / "test.sqlite3"))
 
 
-def new_class(pack="probability"):
-    return client.post(f"{API}/classes", json={"pack": pack, "name": "10A"}).json()["class_id"]
+def new_class(pack="probability", policy=None):
+    return client.post(f"{API}/classes", json={"pack": pack, "name": "10A", "policy": policy or {}}).json()["class_id"]
+
+
+PROBE_FIRST = {"group_from": "confirmed"}
 
 
 def sample_bytes(pack, round_name):
@@ -86,11 +90,6 @@ def test_bad_rows_are_reported_not_dropped():
     assert [r["row"] for r in parsed["rejected"]] == [3, 4, 5]
 
 
-def test_spreadsheet_dates_are_caught():
-    parsed = bulk.parse_upload(csv_with(["s1,10-Apr,1/3"]), "a.csv", ["T1", "T2"])
-    assert parsed["sheets"][0]["answers"]["T1"] == "" and "date" in parsed["warnings"][0]["message"]
-
-
 @pytest.mark.parametrize("data, message", [
     (b"", "empty"),
     (b"name,T1,T2\na,1,2", "student_id"),
@@ -102,31 +101,60 @@ def test_unusable_files_say_why(data, message):
         bulk.parse_upload(data, "a.csv", ["T1", "T2"])
 
 
-def test_excel_upload_including_a_fraction_turned_into_a_date():
-    import datetime
-
-    from openpyxl import Workbook
-    book = Workbook()
-    book.active.append(["student_id", "T1", "T2"])
-    book.active.append(["s1", datetime.date(2026, 4, 10), "1/3"])
-    out = io.BytesIO()
-    book.save(out)
-    parsed = bulk.parse_upload(out.getvalue(), "a.xlsx", ["T1", "T2"])
-    assert parsed["sheets"][0]["answers"] == {"T1": "", "T2": "1/3"} and parsed["warnings"]
+def test_excel_is_not_read():
+    with pytest.raises(bulk.UploadError, match="Excel"):
+        bulk.parse_upload(b"PK\x03\x04", "a.xlsx", ["T1"])
 
 
-def test_one_workbook_can_hold_both_papers():
-    from openpyxl import Workbook
-    book = Workbook()
-    book.active.append(["notes"])
-    book.create_sheet().append(["student_id", "T1"])
-    book.worksheets[1].append(["s1", "1/2"])
-    book.create_sheet().append(["student_id", "T1-P1"])
-    book.worksheets[2].append(["s1", "3/4"])
-    out = io.BytesIO()
-    book.save(out)
-    assert bulk.parse_upload(out.getvalue(), "a.xlsx", ["T1"])["sheets"][0]["answers"] == {"T1": "1/2"}
-    assert bulk.parse_upload(out.getvalue(), "a.xlsx", ["T1-P1"])["sheets"][0]["answers"] == {"T1-P1": "3/4"}
+# The handwriting reader's JSON
+PARTS = [{"id": "A", "number": 1}, {"id": "Bi", "number": 2, "part": "i"}, {"id": "Bii", "number": 2, "part": "ii"}]
+
+
+def reader_json(*students):
+    return json.dumps({"students": [{"studentId": sid, "segments": segments} for sid, segments in students]}).encode()
+
+
+def seg(number, text, status="active", **extra):
+    return {"questionNumber": number, "status": status, "transcription": text, **extra}
+
+
+def test_json_reads_active_working_and_splits_parts():
+    data = reader_json(("s1", [seg(1, "total = 8\nP = 3/8"), seg(2, "Total = 96\n(i) 8/96 = 1/12\n(ii) 90/96 = 15/16")]))
+    answers = bulk.parse_upload(data, "anything.txt", PARTS)["sheets"][0]["answers"]
+    assert answers == {"A": "total = 8\nP = 3/8", "Bi": "Total = 96\n8/96 = 1/12", "Bii": "Total = 96\n90/96 = 15/16"}
+
+
+def test_json_ignores_crossed_out_work_and_keeps_rough_work_as_working():
+    data = reader_json(("s1", [seg(1, "P = 1/2", "struck"), seg(1, "sum 2 = 1", "rough"), seg(1, "P = 15/36")]))
+    assert bulk.parse_upload(data, "a.json", PARTS)["sheets"][0]["answers"]["A"] == "sum 2 = 1\nP = 15/36"
+
+
+def test_json_missing_question_is_blank_and_rough_work_alone_is_no_answer():
+    data = reader_json(("s1", [seg(2, "sum 2 = 1", "rough")]))
+    assert bulk.parse_upload(data, "a.json", PARTS)["sheets"][0]["answers"] == {"A": "", "Bi": "", "Bii": ""}
+
+
+def test_json_doubtful_reading_becomes_a_warning_for_the_teacher():
+    data = reader_json(("s1", [seg(1, "P = 1/9", structureConfidence="low", twoAttempts=True), seg(9, "P = 1")]))
+    messages = [w["message"] for w in bulk.parse_upload(data, "a.json", PARTS)["warnings"]]
+    assert any("hard to read" in m for m in messages) and any("Two attempts" in m for m in messages) and any("not on the paper" in m for m in messages)
+
+
+def test_json_parts_without_markers_go_to_the_first_part_with_a_warning():
+    parsed = bulk.parse_upload(reader_json(("s1", [seg(2, "P = 1/12")])), "a.json", PARTS)
+    assert parsed["sheets"][0]["answers"]["Bi"] == "P = 1/12" and parsed["sheets"][0]["answers"]["Bii"] == ""
+    assert "markers" in parsed["warnings"][0]["message"]
+
+
+def test_json_bad_entries_are_reported_not_dropped():
+    parsed = bulk.parse_upload(reader_json(("s1", []), ("bad id", []), ("s1", [])), "a.json", PARTS)
+    assert [s["id"] for s in parsed["sheets"]] == ["s1"] and [r["row"] for r in parsed["rejected"]] == [2, 3]
+
+
+@pytest.mark.parametrize("data, message", [(b"{not json", "not valid JSON"), (b'{"pupils": []}', "students")])
+def test_unusable_json_says_why(data, message):
+    with pytest.raises(bulk.UploadError, match=message):
+        bulk.parse_upload(data, "a.json", PARTS)
 
 
 def test_second_v1_upload_is_refused():
@@ -171,7 +199,7 @@ def test_habit4_marks_drive_the_diagnosis():
     marks["H03"]["results"]["S5"]["score"] = 1
     feed = run(cid, "m3", marks, "ok").json()
     h03 = next(s for s in feed["students"] if s["student"] == "H03")
-    assert h03["next"]["target"] == "WW-DISMISS"
+    assert h03["next"]["target"] == "WW-NOT-ASKING"
 
 
 @pytest.mark.parametrize("bad", ["4", 7, -1, True, None])
@@ -190,14 +218,16 @@ def test_ai_may_only_choose_from_the_catalogue():
     assert "UNMAPPED" in feed["students"][0]["summary"]
 
 
-def test_valid_ai_reading_is_medium_and_only_prompts_a_probe():
-    cid = new_class()
+@pytest.mark.parametrize("policy, action", [(None, "group"), (PROBE_FIRST, "probe")])
+def test_valid_ai_reading_is_medium_and_counts_as_one_answer(policy, action):
+    cid = new_class(policy=policy)
     upload(cid, "v1", csv_rows_with_unknown_answer())
     tasks = client.get(f"{API}/classes/{cid}/m3/tasks").json()["tasks"]
     assert [t["id"] for t in tasks] == ["read:X"] and "Catalogue" in tasks[0]["user"]
     feed = run(cid, "m3", {"read:X": {"answers": {"T1": {"code": "MC-L", "why": "counts colours"}}}}, "ok").json()
     student = feed["students"][0]
-    assert student["summary"]["MC-L"]["highs"] == 0 and student["next"]["action"] == "probe"
+    assert student["summary"]["MC-L"]["highs"] == 0 and student["summary"]["MC-L"]["status"] == "candidate"
+    assert student["next"]["action"] == action
 
 
 def csv_rows_with_unknown_answer():
@@ -207,7 +237,7 @@ def csv_rows_with_unknown_answer():
 
 
 def test_probe_result_is_saved():
-    cid = new_class()
+    cid = new_class(policy=PROBE_FIRST)
     upload(cid, "v1", sample_bytes("probability", "v1"))
     run(cid, "m3")
     assert client.post(f"{API}/classes/{cid}/probes", json={"student": "P06", "code": "MC-L", "outcome": "supports"}).status_code == 200
@@ -238,12 +268,17 @@ def test_labelling_language_from_ai_is_dropped():
     assert ai_tasks.safe_text("Needs practice listing outcomes") == "Needs practice listing outcomes"
 
 
-def test_every_student_is_in_a_group_or_cohort():
-    cid = through_plan()
+@pytest.mark.parametrize("policy, cohorts", [(None, {"extension"}), (PROBE_FIRST, {"extension", "probe"})])
+def test_every_student_is_in_a_group_or_cohort(policy, cohorts):
+    cid = new_class(policy=policy)
+    upload(cid, "v1", sample_bytes("probability", "v1"))
+    for module in MODULE_ORDER:
+        run(cid, module)
     feed = status(cid)["feeds"]["m5"]
     placed = {s for g in feed["groups"] for s in g["student_ids"]} | {s for c in feed["cohorts"] for s in c["student_ids"]}
     assert placed == {f"P0{i}" for i in range(1, 7)}
-    assert {c["cohort_id"] for c in feed["cohorts"]} == {"extension", "probe"}
+    assert {c["cohort_id"] for c in feed["cohorts"]} == cohorts
+    assert all(set(g["evidence"]) == set(g["student_ids"]) for g in feed["groups"])
 
 
 def test_teacher_edits_only_before_planning():
@@ -319,7 +354,7 @@ def test_habit4_runs_end_to_end():
     run(cid, "m7-score", v2, "ok")
     assert run(cid, "m8").status_code == 200
     rows = {s["student"]: s for s in status(cid)["feeds"]["m8"]["comparison"]["students"]}
-    assert rows["H03"]["no_longer_seen"] == ["WW-DISMISS"]
+    assert rows["H03"]["no_longer_seen"] == ["WW-NOT-ASKING"]
 
 
 def test_invalid_ai_summary_keys_are_ignored():
@@ -330,8 +365,9 @@ def test_invalid_ai_summary_keys_are_ignored():
 
 def test_templates_match_their_papers():
     packs = all_packs()
-    assert samples.template(packs["habit4"], "v1").startswith("student_id,K1")
-    assert samples.template(packs["probability"], "v2").startswith("student_id,T1-P1")
+    segments = json.loads(samples.template(packs["habit4"], "v1"))["students"][0]["segments"]
+    assert [s["questionNumber"] for s in segments] == list(range(1, 18))
+    assert samples.csv_template(packs["probability"], "v2").startswith("student_id,T1-P1")
 
 
 def test_engine_source_is_not_served():

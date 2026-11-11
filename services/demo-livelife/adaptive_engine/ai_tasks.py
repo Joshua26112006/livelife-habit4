@@ -26,7 +26,8 @@ def _task(pack, task_id, instruction, material, max_tokens=700):
 
 
 def _catalogue(pack):
-    return "\n".join(f"{code}: {e['name']}. {e['belief']}" for code, e in pack.misconceptions.items() if e["kind"] == "belief")
+    return "\n".join(f"{code}: {e['name']}. {e['belief']}" + (f" Looks like: {e['looks_like']}" if e.get("looks_like") else "")
+                     for code, e in pack.misconceptions.items() if e["kind"] == "belief")
 
 
 # ---- Modules 3 and 7: reading answers the rules cannot judge alone

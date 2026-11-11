@@ -68,6 +68,7 @@ section.ch { padding: 40px 0 28px; border-bottom: 1px solid var(--line); display
 details summary { cursor: pointer; color: var(--accent); font-size: 14px; } details { margin: 2px 0; } ul.t, ol.t { margin: 6px 0; padding-left: 20px; font-size: 14px; }
 .ba { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; } @media (max-width: 960px) { .ba { grid-template-columns: 1fr; } }
 .vrow { display: grid; grid-template-columns: 58px minmax(0, 1fr); gap: 8px; align-items: start; font-size: 14px; } .chip { border-radius: 8px; padding: 3px 9px; font-size: 13px; font-weight: 600; color: #fff; display: inline-block; } .chip.t { background: transparent; color: var(--secure); border: 2px dashed var(--secure); }
+.who { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 13px; color: var(--muted); } .who select { font-size: 13px; padding: 3px 6px; max-width: 100%; } .mgrid .who select { width: 100%; }
 .draft { font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 6px; background: color-mix(in srgb, var(--slip) 22%, transparent); color: var(--ink); white-space: nowrap; }
 .cmp { display: grid; grid-template-columns: minmax(0, 1fr) 150px; gap: 10px; align-items: center; font-size: 14px; } .two { display: grid; gap: 3px; } .two div { height: 9px; border-radius: 4px; } .two .a { background: var(--wrong); } .two .b { background: var(--secure); }
 #busy { position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%); z-index: 9; display: none; padding: 10px 18px; border-radius: 999px; background: var(--ink); color: var(--surface); font-size: 14px; }
@@ -83,10 +84,12 @@ footer { max-width: 1120px; margin: 0 auto; padding: 0 18px 40px; font-size: 13p
 <footer id="foot"></footer>
 <script>
 const API = "api";
-const ORDER = ["created","uploaded","identified","mapped","grouped","planned","approved","paper_ready","v2_uploaded","scored","profiled"];
+const ORDER = ["created","paper_set","uploaded","keyed","read","identified","mapped","grouped","planned","approved","paper_ready","v2_uploaded","scored","profiled"];
 const COLORS = { secure: "--secure", shown: "--shown", slip: "--slip", wrong: "--wrong", teacher: "--teach", blank: "--blank" };
 const LABELS = { secure: "Correct, method shown", shown: "Correct, no working", slip: "Slip or missing fact", wrong: "Thinking error", teacher: "For the teacher", blank: "Left blank" };
 const OWNER = { content: ["Our content", "--content"], teacher: ["Teacher", "--teacher"], student: ["Student", "--student"] };
+const OWNER_SETS = [["auto","By how many students have it"],["content,teacher,student","Our content, teacher and student"],["teacher,student","Teacher and student"],["teacher","Teacher only"],["student","Student only"]];
+const seenOnce = level => level === "candidate" ? ' <span class="muted small">(seen once)</span>' : "";
 let C = null, SUBJECTS = {}, tab = 0, who = "";
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
@@ -116,9 +119,21 @@ async function step(message, fn) {
 async function refresh() { if (C) C = await call(`${API}/classes/${C.class_id}`); render(); }
 
 // Each action runs the modules behind it, so the teacher sees steps, not modules.
-const analyse = async () => { await module_("identify"); await module_("insights").catch(() => {}); };
+// An uploaded paper: work out missing answers, mark the working, name the thinking errors. A subject pack: one step.
+const fromKey = async () => { await module_("read-answers"); await fromRead(); };
+const fromRead = async () => { await module_("thinking-errors"); await module_("insights").catch(() => {}); };
+// Answers the AI worked out are shown to the teacher before any marking; a paper that brought all its answers goes straight on.
+const analyse = async () => { if (C.generic) { const k = await module_("answer-key"); if (k.paper.some(p => !p.answer || p.answer_source === "ai")) return; await fromKey(); } else { await module_("identify"); await module_("insights").catch(() => {}); } };
+async function confirmKey() {
+  const changed = {}; (C.paper || []).forEach(p => { const v = $(`key-${p.id}`)?.value.trim(); if (v && v !== p.answer) changed[p.id] = v; });
+  if ((C.paper || []).some(p => !p.answer && !changed[p.id])) throw new Error("Every question needs an expected answer before marking.");
+  if (Object.keys(changed).length) await post("answers", { answers: changed });
+  await fromKey();
+}
 const ACTIONS = {
   uploaded: ["Analyse the class", "Reading every student's answers…", analyse],
+  keyed: ["Answers are right: mark the class", "Reading every student's answers…", confirmKey],
+  read: ["Continue the analysis", "Naming the thinking errors…", fromRead],
   identified: ["Find the fixes and form groups", "Matching fixes and forming groups…", async () => { await module_("interventions"); await module_("clusters"); }],
   mapped: ["Form groups", "Forming groups…", () => module_("clusters")],
   grouped: ["Build the teaching plan", "Drafting the plan and materials…", () => module_("instruction")],
@@ -127,7 +142,9 @@ const ACTIONS = {
   v2_uploaded: ["Compare version 1 and 2", "Reading version 2 and comparing…", async () => { await module_("reassessment-score"); await module_("profile"); }],
   scored: ["Update student profiles", "Updating profiles…", () => module_("profile")],
 };
-function act() { const a = ACTIONS[C.stage]; if (a) step(a[1], a[2]); }
+// No re-test for an uploaded paper yet.
+const actionNow = () => C.generic && ["approved","paper_ready","v2_uploaded","scored"].includes(C.stage) ? null : ACTIONS[C.stage];
+function act() { const a = actionNow(); if (a) step(a[1], a[2]); }
 
 async function createClass() {
   const pack = $("pack").value, name = $("name").value.trim() || "My class";
@@ -144,10 +161,28 @@ async function uploadBytes(round, body, filename) {
   });
 }
 function uploadFile(round) { const f = $(`file-${round}`).files[0]; if (f) uploadBytes(round, f, f.name); else showError("Choose a file first."); }
+async function uploadPaper(body) {
+  await step("Reading the question paper…", () => call(`${API}/classes/${C.class_id}/paper`, { method: "POST", body }));
+}
+function uploadPaperFile() { const f = $("file-paper").files[0]; if (f) uploadPaper(f); else showError("Choose the question paper first."); }
+async function useSamplePaper() { uploadPaper(await (await fetch(`${API}/files/generic/paper?sample=true`)).text()); }
 async function useSample(round) { uploadBytes(round, await (await fetch(`${API}/files/${C.pack}/${round}?sample=true`)).text(), "sample.csv"); }
 const probe = (student, code, outcome) => step("Saving the follow-up result…", () => post("probes", { student, code, outcome }));
 const move = (student, from_group, to_group) => to_group && step("Moving the student…", () => post("groups/move", { student, from_group, to_group, rationale: "Teacher edit" }));
 function raise(i) { const ids = C.feeds.m5.groups.filter(g => g.delivery === "teacher").map(g => g.group_id); [ids[i-1], ids[i]] = [ids[i], ids[i-1]]; const rest = C.feeds.m5.groups.filter(g => g.delivery !== "teacher").map(g => g.group_id); step("Changing the order…", () => post("groups/priority", { group_ids: [...ids, ...rest] })); }
+const saveRules = (o, msg) => step(msg || "Applying the new rules…", () => post("settings", { policy: o }));
+function setOwner(code, value) {
+  const owners = { ...(C.policy_overrides.owners || {}) };
+  if (value === "auto") { if (C.subject_map.policy.owners[code]) owners[code] = "auto"; else delete owners[code]; } else owners[code] = value.split(",");
+  const o = { ...C.policy_overrides, owners }; if (!Object.keys(owners).length) delete o.owners;
+  saveRules(o, "Changing who fixes it…");
+}
+function applyRules() {
+  const base = C.subject_map.policy, o = { ...C.policy_overrides };
+  const set = (k, v) => { if (v === base[k]) delete o[k]; else o[k] = v; };
+  set("group_from", $("r-group").value); set("content_share", Number($("r-content").value)); set("teacher_share", Number($("r-teacher").value));
+  saveRules(o);
+}
 function pickTab(i) { tab = i; drawAnswers(); }
 function pickStudent(v) { who = v; $("one").innerHTML = oneStudent(); }
 
@@ -163,27 +198,30 @@ const LOOP = [["Short test","created"],["Answers uploaded","uploaded"],["How eac
 function viewNew() {
   $("nav").innerHTML = ""; $("foot").textContent = "";
   $("app").innerHTML = `<div class="hero"><span class="step">AI Decoder · Adaptive Teaching Engine</span><h1>We read how every student solved each question, find the thinking error behind each wrong answer, and send it to whoever can fix it.</h1>
-  <div class="panel"><h3>Start with a class</h3><div class="row"><select id="pack" aria-label="Subject" onchange="showSubject()">${Object.entries(SUBJECTS).map(([k,m]) => `<option value="${esc(k)}">${esc(subjectLine(m))}</option>`).join("")}</select><input type="text" id="name" placeholder="Class name" aria-label="Class name" maxlength="60"><button class="pri" onclick="createClass()">Create class</button></div><div id="preview" class="small muted"></div><p class="small muted">Use synthetic data for now: this demo has no sign-in.</p></div></div>`;
+  <div class="panel"><h3>Start with a class</h3><div class="row"><select id="pack" aria-label="Subject" onchange="showSubject()"><option value="generic">Any subject: upload your question paper</option>${Object.entries(SUBJECTS).map(([k,m]) => `<option value="${esc(k)}">${esc(subjectLine(m))}</option>`).join("")}</select><input type="text" id="name" placeholder="Class name" aria-label="Class name" maxlength="60"><button class="pri" onclick="createClass()">Create class</button></div><div id="preview" class="small muted"></div><p class="small muted">Use synthetic data for now: this demo has no sign-in.</p></div></div>`;
   showSubject();
 }
-function showSubject() { const m = SUBJECTS[$("pack").value]; $("preview").textContent = `${m.subject.board}; ${m.subject.source}. ${m.questions.length} questions, ${Object.keys(m.competencies).length} competencies, ${Object.keys(m.misconceptions).length} known error patterns. ${m.interventions.approved} of ${m.interventions.total} interventions expert-approved.`; }
+function showSubject() { if ($("pack").value === "generic") { $("preview").textContent = "Upload the question paper (and the expected answers, if you have them), then the students' answers. Any missing answer is worked out for you to check, and the class's wrong answers are grouped into a few thinking errors. Use the same class name for every subject, so each student's results build up in one place."; return; } const m = SUBJECTS[$("pack").value]; $("preview").textContent = `${m.subject.board}; ${m.subject.source}. ${m.questions.length} questions, ${Object.keys(m.competencies).length} competencies, ${Object.keys(m.misconceptions).length} known error patterns. ${m.interventions.approved} of ${m.interventions.total} interventions expert-approved.`; }
 
 function viewHero() {
   const f = C.feeds.m3, o = f?.overview, i = ORDER.indexOf(C.stage);
   const tiles = o ? `<div class="tiles">${[[o.students,"students"],[o.answers_read,"answers read"],[o.thinking_errors,"thinking errors found"],[o.right_answer_wrong_reason,"right answers with a wrong reason"]].map(t => `<div class="tile"><b class="num">${t[0]}</b><span class="muted">${t[1]}</span></div>`).join("")}</div>` : "";
   const loop = LOOP.map(([l,s],n) => { const at = ORDER.indexOf(s), nextAt = LOOP.findIndex(x => ORDER.indexOf(x[1]) > i); return `<span class="s ${i >= at ? "done" : n === nextAt ? "now" : ""}">${l}</span>`; }).join('<span class="a">→</span>');
-  const up = C.stage === "created" ? `<div class="panel"><h3>Upload the class's answers</h3><p class="small">${esc(C.subject_map.upload_hint)}</p><div class="row"><a class="btn" href="${API}/files/${C.pack}/v1">Download template</a><input type="file" id="file-v1" accept=".csv,.xlsx" aria-label="Answer file"><button class="pri" onclick="uploadFile('v1')">Upload and analyse</button><button onclick="useSample('v1')">Use sample class</button></div><p class="small muted">One row per student, one column per question. Use student codes, not names. In Excel, format answer columns as text so 4/10 does not become a date.</p></div>` : "";
+  const paperUp = `<div class="panel"><h3>Upload the question paper</h3><p class="small">A JSON list of questions: questionNumber, questionText and marks. Add "answer" to any question if you have it; parts are read from (i), (ii) in the text.</p><div class="row"><input type="file" id="file-paper" accept=".json" aria-label="Question paper"><button class="pri" onclick="uploadPaperFile()">Upload paper</button><button onclick="useSamplePaper()">Use sample paper</button></div></div>`;
+  const up = C.generic && C.stage === "created" ? paperUp : C.stage === (C.generic ? "paper_set" : "created") ? `<div class="panel"><h3>Upload the class's answers</h3><p class="small">${esc(C.subject_map.upload_hint)}</p><div class="row">${C.generic ? "" : `<a class="btn" href="${API}/files/${C.pack}/v1">Download template</a>`}<input type="file" id="file-v1" accept=".json,.csv" aria-label="Answer file"><button class="pri" onclick="uploadFile('v1')">Upload and analyse</button><button onclick="useSample('v1')">Use sample class</button></div><p class="small muted">Upload the JSON from the handwriting reader: one entry per student, with each question's working as written. Crossed-out work is ignored and rough work is kept as working. Use student codes, not names.</p></div>` : "";
+  const SOURCE = { paper: "From the paper", teacher: "Yours", ai: '<span class="draft">Worked out by AI: check</span>' };
+  const key = C.generic && C.stage === "keyed" ? `<div class="panel"><h3>Check the expected answers</h3><p class="small">Every student is marked against these. Correct any that are wrong, then mark the class.</p>${table(["Q","Question","Expected answer",""], C.paper.map(p => [esc(p.id), esc(p.text), `<input type="text" id="key-${esc(p.id)}" value="${esc(p.answer)}" aria-label="Expected answer for ${esc(p.id)}" size="10">`, SOURCE[p.answer_source] || '<span class="draft">Needed</span>']))}<div class="row" style="margin-top:10px"><button class="pri" onclick="act()">Answers are right: mark the class</button></div></div>` : "";
   const report = C.uploads.v1 && (C.uploads.v1.rejected.length || C.uploads.v1.warnings.length) ? uploadProblems(C.uploads.v1) : "";
-  return `<div class="hero" id="top"><span class="step">AI Decoder · Adaptive Teaching Engine · ${esc(subjectLine(C.subject_map))}</span><h1>We read how every student solved each question, find the thinking error behind each wrong answer, and send it to whoever can fix it.</h1><p class="say">${esc(C.name)}${o ? `: a test of ${f.questions.length} questions, ${plural(o.students, "student")}. Below is what the system sees.` : "."}</p>${tiles}<div class="loop" aria-label="The process">${loop}</div>${up}${report}${aiNotes()}</div>`;
+  return `<div class="hero" id="top"><span class="step">AI Decoder · Adaptive Teaching Engine · ${C.subject_map ? esc(subjectLine(C.subject_map)) : "Uploaded paper"} · Class ${esc(C.class_code)}</span><h1>We read how every student solved each question, find the thinking error behind each wrong answer, and send it to whoever can fix it.</h1><p class="say">${esc(C.name)}${o ? `: a test of ${f.questions.length} questions, ${plural(o.students, "student")}. Below is what the system sees.` : "."}</p>${tiles}<div class="loop" aria-label="The process">${loop}</div>${up}${key}${report}${aiNotes()}</div>`;
 }
-function uploadProblems(r) { return `<div class="note">${r.rejected.length ? `<b>${plural(r.rejected.length, "row")} not used:</b> ${r.rejected.map(x => `row ${x.row} (${esc(x.reason)})`).join("; ")}. ` : ""}${r.warnings.length ? `<b>${plural(r.warnings.length, "answer")} to check:</b> ${r.warnings.slice(0, 6).map(x => `${esc(x.student)} ${esc(x.question)}`).join(", ")}.` : ""}</div>`; }
+function uploadProblems(r) { return `<div class="note">${r.rejected.length ? `<b>${plural(r.rejected.length, "row")} not used:</b> ${r.rejected.map(x => `row ${x.row} (${esc(x.reason)})`).join("; ")}. ` : ""}${r.warnings.length ? `<b>${plural(r.warnings.length, "answer")} to check:</b> ${r.warnings.slice(0, 6).map(x => `${esc(x.student)} ${esc(x.question)}: ${esc(x.message)}`).join(" ")}` : ""}</div>`; }
 function aiNotes() {
-  const f = C.feeds, bad = [["Reading answers", f.m3?.ai],["Interventions", f.m4?.ai],["Groups", f.m5?.ai],["Teaching material", f.m6?.ai],["Paper check", f["m7-paper"]?.ai],["Re-test reading", f["m7-score"]?.ai],["Summary", f.m8?.ai]].filter(x => ["failed","partial","off"].includes(x[1]));
+  const f = C.feeds, bad = [["Working out answers", C.ai?.["m3-key"]],["Reading answers", f.m3?.ai],["Naming thinking errors", C.ai?.["m3-errors"]],["Interventions", f.m4?.ai],["Groups", f.m5?.ai],["Teaching material", f.m6?.ai],["Paper check", f["m7-paper"]?.ai],["Re-test reading", f["m7-score"]?.ai],["Summary", f.m8?.ai]].filter(x => ["failed","partial","off"].includes(x[1]));
   return bad.length ? `<div class="note">AI was unavailable for: ${bad.map(x => x[0]).join(", ")}. Those parts use the rules alone${f.m3?.ai_failed_students ? `, and ${plural(f.m3.ai_failed_students, "student")}'s written answers went to the teacher` : ""}.</div>` : "";
 }
 function viewTest() {
   const f = C.feeds.m3; if (!f) return "";
-  return chapter("test","1 · THE TEST","The questions","Students write their working, not just the answer.", `<div class="qs">${f.questions.map((q,i) => `<div class="panel">${q.level ? `<span class="badge ${esc(q.level)}">Q${i+1} · ${esc(q.level)}</span>` : ""}${ICONS[q.icon] || ""}<h3>${esc(q.text)}</h3><p class="small muted">Answer: <span class="num">${esc(q.answer)}</span> · <span class="num">${q.sound}</span> of ${q.students} solved it soundly</p></div>`).join("")}</div>`);
+  return chapter("test","1 · THE TEST","The questions","Students write their working, not just the answer.", `<div class="qs">${f.questions.map((q,i) => `<div class="panel">${q.level ? `<span class="badge ${esc(q.level)}">Q${i+1} · ${esc(q.level)}</span>` : ""}${ICONS[q.icon] || ""}<h3>${esc(q.text)}</h3><p class="small muted">Answer: <span class="num">${esc(q.answer)}</span>${(C.paper || []).find(p => p.id === q.id)?.answer_source === "ai" ? ' <span class="draft">Worked out by AI: check</span>' : ""} · <span class="num">${q.sound}</span> of ${q.students} solved it soundly</p></div>`).join("")}</div>`);
 }
 function viewAnswers() {
   if (!C.feeds.m3) return "";
@@ -202,8 +240,11 @@ function drawAnswers() {
 }
 function viewReveals() {
   const f = C.feeds.m3; if (!f) return "";
-  const rows = f.class.misconceptions, n = f.class.class_size;
-  return chapter("reveals","3 · WHAT IT REVEALS","Wrong answers trace back to a few thinking errors",`Across all ${f.overview.answers_read} answers, most wrong answers come from a few patterns. Each one has a cause we can name and fix.`, `<div class="mgrid">${rows.map(r => `<div class="panel ${r.kind !== "belief" ? "gap" : ""}"><span class="small muted">${r.kind === "belief" ? "Thinking error" : r.kind === "fact" ? "Missing fact" : "Slip"}</span><h3>${esc(r.name)}</h3><div class="pct"><b class="num">${Math.round(r.share_percent)}%</b><span class="muted">${r.students.length} of ${n} students</span></div><div class="bar"><div style="width:${r.share_percent}%"></div></div><p style="font-size:14px">${esc(r.why)}</p>${r.examples.map(x => `<div class="ex">${esc(x.q)}: <span class="hand" style="font-size:20px">${esc(x.sample.split("\n").join(" → "))}</span></div>`).join("")}</div>`).join("")}</div>${probes()}`);
+  const all = f.class.misconceptions, n = f.class.class_size, rows = all.filter(r => r.kind === "belief"), other = all.filter(r => r.kind !== "belief");
+  const who = r => { const now = r.owner_source === "set" ? r.owners.join(",") : "auto";
+    return C.settings_open ? `<label class="who">Who fixes it <select onchange="setOwner('${esc(r.code)}',this.value)">${OWNER_SETS.map(([v,l]) => `<option value="${v}" ${v === now ? "selected" : ""}>${l}</option>`).join("")}${OWNER_SETS.some(x => x[0] === now) ? "" : `<option selected>${esc(r.owners.join(", "))}</option>`}</select></label>` : `<span class="who">Fixed by: ${r.owners.map(o => OWNER[o][0]).join(", ")}</span>`; };
+  const others = other.length ? `<p class="small muted">Not thinking errors, so practice only: ${other.map(r => `${esc(r.name)} (${plural(r.students.length, "student")}: ${esc(r.students.join(", "))})`).join("; ")}.</p>` : "";
+  return chapter("reveals","3 · WHAT IT REVEALS","Wrong answers trace back to a few thinking errors",`Across all ${f.overview.answers_read} answers, most wrong answers come from ${rows.length === 1 ? "one pattern" : `${rows.length} patterns`}. Each one has a cause we can name and fix.`, `<div class="mgrid">${rows.map(r => `<div class="panel"><span class="small muted">Thinking error</span><h3>${esc(r.name)}</h3><div class="pct"><b class="num">${Math.round(r.share_percent)}%</b><span class="muted">${r.students.length} of ${n} students</span></div><div class="bar"><div style="width:${r.share_percent}%"></div></div><p style="font-size:14px"><b>What they think:</b> ${esc(r.why)}</p>${r.looks_like ? `<p style="font-size:14px"><b>In their answers:</b> ${esc(r.looks_like)}</p>` : ""}<p style="font-size:14px"><b>Students:</b> ${r.students.map(s => esc(s) + seenOnce(r.evidence?.[s])).join(", ")}</p>${r.examples.map(x => `<div class="ex">${esc(x.q)}: <span class="hand" style="font-size:20px">${esc(x.sample.split("\n").join(" → "))}</span></div>`).join("")}${who(r)}</div>`).join("")}</div>${others}${probes()}`);
 }
 function probes() {
   const open = C.feeds.m3.students.filter(s => s.next.action === "probe" && C.stage === "identified");
@@ -214,7 +255,16 @@ function viewFixes() {
   if (!reached("identified")) return "";
   const rows = C.feeds.m3.class.misconceptions;
   const col = o => { const list = rows.filter(r => r.owners.includes(o)); return `<div class="panel own" style="--oc:var(${OWNER[o][1]})"><h3><span>${OWNER[o][0]}</span><span class="num">${list.length}</span></h3>${list.length ? list.map(r => `<div class="act"><span class="tag">${esc(r.name)} · ${plural(r.students.length,"student")}${r.owners[0] === o ? " · main fix" : ""}</span><span>${r.remedies[o] ? esc(r.remedies[o]) : '<span class="gaps">Awaiting expert draft.</span>'}</span></div>`).join("") : '<p class="small muted">Nothing routed here in this class.</p>'}</div>`; };
-  return chapter("fixes","4 · WHO FIXES IT","Each error goes to the person who can fix it","How many students share an error decides where the main fix goes. If a quarter of the class or more makes it, the cause is in the material, so we change our content.", `<div class="rule"><span class="r" style="background:var(--content)">25% or more → our content</span><span class="r" style="background:var(--teacher)">10% to 24% → teacher</span><span class="r" style="background:var(--student)">Under 10%, or a slip → student</span><span class="small muted">Every affected student also gets their own practice card.</span></div><div class="owners">${col("content")}${col("teacher")}${col("student")}</div>`);
+  return chapter("fixes","4 · WHO FIXES IT","Each error goes to the person who can fix it","How many students share an error decides where the main fix goes. If a quarter of the class or more makes it, the cause is in the material, so we change our content.", `<div class="rule"><span class="r" style="background:var(--content)">${C.policy.content_share}% or more → our content</span><span class="r" style="background:var(--teacher)">${C.policy.teacher_share}% to under ${C.policy.content_share}% → teacher</span><span class="r" style="background:var(--student)">Under ${C.policy.teacher_share}%, or a slip → student</span><span class="small muted">Every affected student also gets their own practice card.</span></div><div class="owners">${col("content")}${col("teacher")}${col("student")}</div>${rulesPanel()}`);
+}
+function rulesPanel() {
+  if (!C.settings_open) return "";
+  const P = C.policy;
+  return `<details class="panel"><summary class="small"><b>Change the rules</b> <span class="muted">for this class</span></summary><div class="row" style="margin-top:10px">
+    <label class="who">Put a student in a group when the error shows up <select id="r-group"><option value="candidate" ${P.group_from === "candidate" ? "selected" : ""}>in even one answer</option><option value="confirmed" ${P.group_from === "confirmed" ? "selected" : ""}>in two or more answers (ask a follow-up question first)</option></select></label>
+    <label class="who">Our content fixes it from <input type="text" inputmode="numeric" id="r-content" size="3" value="${P.content_share}">% of the class</label>
+    <label class="who">Teacher fixes it from <input type="text" inputmode="numeric" id="r-teacher" size="3" value="${P.teacher_share}">%</label>
+    <button class="tiny pri" onclick="applyRules()">Apply</button><button class="tiny" onclick="saveRules({}, 'Going back to the usual rules…')">Back to usual</button></div></details>`;
 }
 function material(c, m) {
   return `<ol class="t">${c.steps.map(s => `<li>${esc(s)}</li>`).join("")}</ol>${c.exit_check ? `<p class="small"><b>Exit check:</b> ${esc(c.exit_check)}</p>` : ""}${c.practice.length ? `<p class="small"><b>Practice</b></p><ul class="t">${c.practice.map(p => `<li>${esc(p.text)} <span class="muted">(${esc(c.answer_key[p.id] || "")})</span></li>`).join("")}</ul>` : ""}${m ? `<p class="small"><span class="draft">${esc(m.label)}</span></p><p class="small"><b>Teacher script</b></p><ul class="t">${m.teacher_script.map(s => `<li>${esc(s)}</li>`).join("")}</ul><p class="small"><b>Worksheet</b></p><ul class="t">${m.worksheet.map(s => `<li>${esc(s)}</li>`).join("")}</ul>${m.exit_ticket ? `<p class="small"><b>Exit ticket:</b> ${esc(m.exit_ticket)}</p>` : ""}` : ""}`;
@@ -222,10 +272,10 @@ function material(c, m) {
 function viewPlan() {
   const g = C.feeds.m5, p = C.feeds.m6; if (!g) return "";
   const edit = C.stage === "grouped", taught = g.groups.filter(x => x.delivery === "teacher"), cards = g.groups.filter(x => x.delivery !== "teacher");
-  const member = x => x.student_ids.map(s => `<span>${esc(s)}${edit && g.groups.length > 1 ? ` <select aria-label="Move ${esc(s)}" onchange="move('${esc(s)}','${esc(x.group_id)}',this.value)"><option value="">move…</option>${g.groups.filter(o => o.group_id !== x.group_id).map(o => `<option value="${esc(o.group_id)}">${esc(o.need)}</option>`).join("")}</select>` : ""}</span>`).join(edit ? "<br>" : ", ");
+  const member = x => x.student_ids.map(s => `<span>${esc(s)}${seenOnce(x.evidence?.[s])}${edit && g.groups.length > 1 ? ` <select aria-label="Move ${esc(s)}" onchange="move('${esc(s)}','${esc(x.group_id)}',this.value)"><option value="">move…</option>${g.groups.filter(o => o.group_id !== x.group_id).map(o => `<option value="${esc(o.group_id)}">${esc(o.need)}</option>`).join("")}</select>` : ""}</span>`).join(edit ? "<br>" : ", ");
   let body = `<div class="qs">${taught.map((x,i) => `<div class="panel"><span class="tag">TEACHER-LED · ${plural(x.student_ids.length,"student")}${x.status === "approved" ? " · APPROVED" : ""}</span><h3>${esc(x.need)}</h3><p class="small muted">${esc(g.reasons[x.group_id])}</p><p class="small"><b>${esc(g.titles[x.intervention_id])}</b> <span class="draft">Unreviewed draft</span></p><div class="small">${member(x)}</div>${edit && i ? `<div><button class="tiny" onclick="raise(${i})">Teach earlier</button></div>` : ""}</div>`).join("")}</div>`;
   const others = [...cards.map(x => [`<b>${esc(x.need)}</b>`, member(x), `Practice card: ${esc(g.titles[x.intervention_id])}`]), ...g.cohorts.map(c => [`<b>${esc(c.need)}</b>`, esc(c.student_ids.join(", ")), esc(c.task)])];
-  if (others.length) body += `<div class="panel"><h3>Everyone else has work too</h3><p class="small muted">Needs under 10% go to a practice card, so teacher time goes where more students need it.</p>${table(["Need","Students","What they do"], others)}</div>`;
+  if (others.length) body += `<div class="panel"><h3>Everyone else has work too</h3><p class="small muted">Needs under ${C.policy.teacher_share}% go to a practice card, so teacher time goes where more students need it.</p>${table(["Need","Students","What they do"], others)}</div>`;
   if (p) {
     const rows = p.plan.periods.flatMap(x => [[x.period,`0–${x.recap[1]}`,"Whole class recap",""], ...x.direct_teaching.map(s => [x.period,`${s.start}–${s.end}`,esc(p.needs[s.teacher_with]),"Supervised practice and cards"]), [x.period,`${x.exit_ticket[0]}–${x.exit_ticket[1]}`,"Exit ticket for all",""]]);
     body += `<div class="panel"><h3>The timetable <span class="small muted">(${p.plan.status === "approved" ? "approved" : "recommended"})</span></h3>${rows.length ? table(["Period","Minutes","Teacher with","Everyone else"], rows) : '<p class="small muted">No teacher-led group is needed in this class.</p>'}</div><div class="panel"><h3>Teaching materials</h3>${Object.entries(p.plan.cards).map(([id,c]) => `<details><summary>${esc(p.needs[id])}: ${esc(c.title)} (${esc(p.groups[id].join(", "))})</summary>${material(c, p.materials[id])}</details>`).join("")}</div>`;
@@ -236,7 +286,7 @@ function viewRetest() {
   const p = C.feeds["m7-paper"], s = C.feeds["m7-score"], n = C.feeds.m8; if (!p) return "";
   let body = `<details ${C.stage === "paper_ready" ? "open" : ""}><summary>Version 2 paper: ${plural(p.paper.length,"new question")}, same competencies</summary>${table(["Q","Question","Answer","Check"], p.paper.map(i => [esc(i.id), esc(i.text), esc(i.answer), p.flags[i.id] ? `<span class="draft">${esc(p.flags[i.id])}</span>` : "Clear"]))}</details>`;
   if (Object.keys(p.flags).length) body += `<div class="note">${plural(Object.keys(p.flags).length,"question")} flagged for clarity. Read ${Object.keys(p.flags).length === 1 ? "it" : "them"} before printing.</div>`;
-  if (C.stage === "paper_ready") body += `<div class="panel"><h3>Upload version 2 answers</h3><div class="row"><a class="btn" href="${API}/files/${C.pack}/v2">Download template</a><input type="file" id="file-v2" accept=".csv,.xlsx" aria-label="Version 2 answer file"><button class="pri" onclick="uploadFile('v2')">Upload and compare</button><button onclick="useSample('v2')">Use sample version 2</button></div></div>`;
+  if (C.stage === "paper_ready") body += `<div class="panel"><h3>Upload version 2 answers</h3><div class="row"><a class="btn" href="${API}/files/${C.pack}/v2">Download template</a><input type="file" id="file-v2" accept=".json,.csv" aria-label="Version 2 answer file"><button class="pri" onclick="uploadFile('v2')">Upload and compare</button><button onclick="useSample('v2')">Use sample version 2</button></div></div>`;
   if (s) {
     const c = s.comparison, max = Math.max(1, ...c.misconceptions.flatMap(m => [m.v1_students, m.v2_students]));
     body += `<div class="panel"><h3>Students showing each error</h3><div class="legend" style="grid-auto-flow:column;justify-content:start;gap:16px"><span><i class="sw" style="background:var(--wrong)"></i>Version 1</span><span><i class="sw" style="background:var(--secure)"></i>Version 2</span></div>${c.misconceptions.map(m => `<div class="cmp"><span>${esc(m.name)}</span><span class="two"><div class="a" style="width:${100*m.v1_students/max}%" title="Version 1: ${m.v1_students}"></div><div class="b" style="width:${100*m.v2_students/max}%" title="Version 2: ${m.v2_students}"></div></span></div><p class="small muted num">${m.v1_students} → ${m.v2_students} students</p>`).join("")}${n?.narrative.class_summary ? `<div class="callout">${esc(n.narrative.class_summary)}</div><p><span class="draft">AI draft: check against the numbers above</span></p>` : ""}<p class="small muted">A change is evidence to look at, not proof that the teaching caused it.${c.did_not_sit.length ? ` Did not sit version 2: ${esc(c.did_not_sit.join(", "))}.` : ""}</p></div>`;
@@ -262,6 +312,7 @@ function viewOne() {
   return chapter("student","7 · ONE STUDENT","One student: version 1, the plan, version 2","Pick a student to follow them through.", `<div class="row"><label class="small" for="pick">Student</label><select id="pick" onchange="pickStudent(this.value)">${f.students.map(s => `<option ${s.student === who ? "selected" : ""}>${esc(s.student)}</option>`).join("")}</select></div><div class="ba" id="one">${oneStudent()}</div>`);
 }
 function viewSystem() {
+  if (!C.subject_map) return "";
   const f = C.feeds, m = C.subject_map, status = v => v ? ({ ok: "AI applied", partial: "AI partly applied", failed: "Rules only (AI failed)", off: "Rules only (AI off)" }[v] || v) : "Not run";
   const rows = [["3 Misconception identification","/api/adaptive/identify, /insights",f.m3?.ai],["4 Intervention mapping","/api/adaptive/interventions",f.m4?.ai],["5 Student clustering","/api/adaptive/clusters",f.m5?.ai],["6 Differentiated instruction","/api/adaptive/instruction",f.m6?.ai],["7 Reassessment","/api/adaptive/reassessment-paper, /reassessment-score",f["m7-score"]?.ai||f["m7-paper"]?.ai],["8 Profiles and next action","/api/adaptive/profile",f.m8?.ai]];
   return `<section class="ch" id="system"><details><summary>Subject map and system details</summary><p class="small" style="margin:8px 0"><b>${esc(subjectLine(m))}</b> (${esc(m.subject.board)}; ${esc(m.subject.source)}). ${m.interventions.approved} of ${m.interventions.total} interventions expert-approved.</p>${table(["Module","API","Status"], rows.map(r => [r[0], `<span class="num small">${r[1]}</span>`, status(r[2])]))}<br>${table(["Competency","Name"], Object.entries(m.competencies).map(([k,c]) => [esc(k), esc(c.name)]))}<br>${table(["Error pattern","Belief","Kind"], Object.entries(m.misconceptions).map(([k,c]) => [esc(c.name), esc(c.belief), esc(c.kind)]))}${f.m8 ? `<p class="small muted" style="margin-top:8px">Audit trail: ${plural(f.m8.audit.length,"recorded event")}.</p>` : ""}</details></section>`;
@@ -269,10 +320,10 @@ function viewSystem() {
 function render() {
   if (!C?.stage) return viewNew();
   const parts = [["top","Overview",1],["test","1 The test",C.feeds.m3],["answers","2 What students wrote",C.feeds.m3],["reveals","3 What it reveals",C.feeds.m3],["fixes","4 Who fixes it",C.feeds.m3],["plan","5 The plan",C.feeds.m5],["retest","6 Re-test",C.feeds["m7-paper"]],["student","7 One student",C.feeds.m3]].filter(x => x[2]);
-  const a = ACTIONS[C.stage];
+  const a = actionNow();
   $("nav").innerHTML = parts.map(([id,l]) => `<a href="#${id}">${l}</a>`).join("") + `<span class="sp"></span>${a ? `<button class="pri" onclick="act()">${a[0]} →</button>` : ""}`;
   $("app").innerHTML = viewHero() + viewTest() + viewAnswers() + viewReveals() + viewFixes() + viewPlan() + viewRetest() + viewOne() + viewSystem();
-  $("foot").textContent = "The routing thresholds (25% and 10%) are our proposal, to be calibrated on real classes. Interventions are unreviewed drafts until a subject expert approves them. Bookmark this page to return to this class.";
+  $("foot").textContent = `The routing thresholds (${C.policy.content_share}% and ${C.policy.teacher_share}%) are our proposal,` + " to be calibrated on real classes. Interventions are unreviewed drafts until a subject expert approves them. Bookmark this page to return to this class.";
   drawAnswers(); mark();
 }
 function mark() { let on = 0; const links = [...document.querySelectorAll("nav a")]; links.forEach((l,i) => { const el = document.querySelector(l.getAttribute("href")); if (el && el.getBoundingClientRect().top <= 90) on = i; }); links.forEach((l,i) => l.classList.toggle("on", i === on)); }

@@ -9,6 +9,7 @@ then cannot resolve string annotations on the request models).
 """
 import re
 import sqlite3
+from pathlib import Path
 from typing import Any, Dict, List
 
 from fastapi import APIRouter, Request
@@ -19,6 +20,7 @@ from adaptive_engine import bulk, samples, workflow as wf
 from adaptive_engine.packs import all_packs
 
 router = APIRouter()
+SAMPLE_PAPER = Path(bulk.__file__).resolve().parent / "sample_papers" / "probability-5q"
 
 NO_STORE = {"Cache-Control": "no-store"}
 CLASS_ID = re.compile(r"^[A-Za-z0-9_-]{16,40}$")
@@ -45,8 +47,18 @@ def _with_class(class_id, action):
 
 
 class NewClass(BaseModel):
+    """pack is a subject pack's key, or "generic" for any uploaded paper. class_code groups runs of the same class across
+    subjects (default: from the name)."""
     pack: str
     name: str = Field(min_length=1, max_length=60)
+    class_code: str = Field(default="", max_length=40)
+    policy: Dict[str, Any] = Field(default_factory=dict)
+
+
+class Settings(BaseModel):
+    """Class rules to try: see adaptive_engine/policy.py. Send the full set of overrides each time; {} goes back to the pack's."""
+    policy: Dict[str, Any] = Field(default_factory=dict)
+    teacher: str = Field(default="teacher", max_length=40)
 
 
 class ModuleRun(BaseModel):
@@ -87,7 +99,7 @@ def subjects():
 @router.post("/classes")
 def create_class(body: NewClass):
     try:
-        return _ok({"class_id": wf.create(body.pack, body.name.strip()).class_id})
+        return _ok({"class_id": wf.create(body.pack, body.name.strip(), body.policy, body.class_code.strip() or None).class_id})
     except wf.WorkflowError as err:
         return _error(str(err), 400)
 
@@ -95,6 +107,35 @@ def create_class(body: NewClass):
 @router.get("/classes/{class_id}")
 def class_status(class_id: str):
     return _with_class(class_id, lambda w: w.status())
+
+
+@router.post("/classes/{class_id}/paper")
+async def paper(class_id: str, request: Request):
+    """The question paper for a generic class: the questions JSON, with expected answers where the teacher has them."""
+    data = await request.body()
+    if len(data) > bulk.MAX_BYTES:
+        return _error("The paper is larger than 2 MB.", 413)
+    return _with_class(class_id, lambda w: w.set_paper(data))
+
+
+class Answers(BaseModel):
+    answers: Dict[str, str] = Field(max_length=200)
+    teacher: str = Field(default="teacher", max_length=40)
+
+
+@router.post("/classes/{class_id}/answers")
+def answers(class_id: str, body: Answers):
+    """The teacher's expected answers for a generic class, by item id (Q1, Q2i, ...)."""
+    return _with_class(class_id, lambda w: w.set_answers(body.answers, body.teacher))
+
+
+@router.get("/records/{code}")
+def records(code: str):
+    """Everything kept for one class across its papers and subjects: per paper, the thinking errors and groups; per student, results."""
+    if not re.fullmatch(r"[A-Za-z0-9_ -]{1,40}", code):
+        return _error("Class not found.", 404)
+    found = wf.class_records(code)
+    return _ok(found) if found else _error("Class not found.", 404)
 
 
 @router.post("/classes/{class_id}/upload/{round_name}")
@@ -127,6 +168,11 @@ def _teacher_step(class_id, stage, kind, payload):
     return _with_class(class_id, step)
 
 
+@router.post("/classes/{class_id}/settings")
+def settings(class_id: str, body: Settings):
+    return _with_class(class_id, lambda w: w.settings(body.policy, body.teacher))
+
+
 @router.post("/classes/{class_id}/probes")
 def probe(class_id: str, body: Probe):
     return _teacher_step(class_id, "identified", "probe", body.model_dump())
@@ -149,10 +195,17 @@ def approve(class_id: str, body: Approve):
 
 @router.get("/files/{pack}/{round_name}")
 def files(pack: str, round_name: str, sample: bool = False):
-    """A blank template, or a synthetic sample, for one paper."""
+    """A blank template, or a synthetic sample, for one paper. For "generic", the sample question paper and students' answers."""
+    if pack == wf.GENERIC:
+        name = {"paper": "questions.json", "v1": "students.json"}.get(round_name)
+        if not sample or name is None:
+            return _error("Unknown file.", 404)
+        text = (SAMPLE_PAPER / name).read_text()
+        return Response(text, media_type="application/json", headers={"Content-Disposition": f'attachment; filename="sample-{name}"', **NO_STORE})
     chapter = all_packs().get(pack)
     if chapter is None or round_name not in ROUNDS or (sample and chapter.sample is None):
         return _error("Unknown file.", 404)
     text = chapter.sample(chapter, round_name) if sample else samples.template(chapter, round_name)
-    name = f"{pack}-{round_name}-{'sample' if sample else 'template'}.csv"
-    return Response(text, media_type="text/csv", headers={"Content-Disposition": f'attachment; filename="{name}"', **NO_STORE})
+    is_json = text.lstrip()[:1] in ("{", "[")
+    name = f"{pack}-{round_name}-{'sample' if sample else 'template'}.{'json' if is_json else 'csv'}"
+    return Response(text, media_type="application/json" if is_json else "text/csv", headers={"Content-Disposition": f'attachment; filename="{name}"', **NO_STORE})

@@ -1,7 +1,7 @@
 {
- "about": "Habit 4 subject pack, as data. Questions are exported from the student assessment (services/demo-livelife/demos/livelife-student/backend.py) and rubrics from lib/livelifeDemo/rubrics.ts: change those and re-export together. Patterns, interventions and parallel scenarios are drafts for expert review.",
+ "about": "Habit 4 subject pack, as data. Questions are exported from the student assessment (services/demo-livelife/demos/livelife-student/backend.py) and rubrics from lib/livelifeDemo/rubrics.ts: change those and re-export together. Thinking errors are kept to a few a teacher can explain (see loader.MAX_THINKING_ERRORS). Patterns, interventions and parallel scenarios are drafts for expert review.",
  "chapter_id": "livelife-habit-4",
- "version": "habit4-draft-0.1",
+ "version": "habit4-draft-0.2",
  "subject": {
   "subject": "Life Skills",
   "board": "LiveLife Education",
@@ -12,142 +12,161 @@
  "brief": "LiveLife Education, Discovering the Leader in Me, Level 5, Habit 4: Think Win-Win, students aged 11 to 16. Keep to its three mindsets, courage and consideration, the Emotional Bank Account as a metaphor, promises, and the five-part Win-Win Agreement. Win-Win does not mean both people get their first choice.",
  "upload_hint": "K1 to K9: the option letter. S1 to S8: the student's own written answer.",
  "extension_task": "Draft a Win-Win Agreement for a real situation in your class, then check it for all five parts.",
+ "policy": {
+  "group_from": "candidate",
+  "content_share": 25,
+  "teacher_share": 10,
+  "max_group_size": 12,
+  "owners": {}
+ },
  "competencies": {
   "S1": {
    "name": "Think Win-Win understanding",
-   "prerequisites": []
+   "prerequisites": [],
+   "real_world": [
+    {
+     "where": "Business partnerships",
+     "example": "A supplier and a shop agree on prices both can live with, so the deal keeps going year after year instead of one side walking away."
+    }
+   ]
   },
   "S2": {
    "name": "Mindset classification",
-   "prerequisites": []
+   "prerequisites": [],
+   "real_world": [
+    {
+     "where": "Workplace negotiation",
+     "example": "HR and negotiation trainers teach people to recognise win-lose, lose-win and win-win approaches before a salary or contract talk."
+    }
+   ]
   },
   "S3": {
    "name": "Perspective and consideration",
-   "prerequisites": []
+   "prerequisites": [],
+   "real_world": [
+    {
+     "where": "Product design",
+     "example": "Designers interview users before building anything. Asking what the other side needs comes first."
+    }
+   ]
   },
   "S4": {
    "name": "Workable Win-Win option",
-   "prerequisites": []
+   "prerequisites": [],
+   "real_world": [
+    {
+     "where": "Team projects at work",
+     "example": "When two teams want the same budget, a manager looks for an option that serves both goals instead of picking a winner."
+    }
+   ]
   },
   "S5": {
    "name": "Respectful communication",
-   "prerequisites": []
+   "prerequisites": [],
+   "real_world": [
+    {
+     "where": "Customer support",
+     "example": "Support teams are trained to repeat the customer's problem back before offering a fix, so the customer feels heard."
+    }
+   ]
   },
   "S6": {
    "name": "Promises and trust",
-   "prerequisites": []
+   "prerequisites": [],
+   "real_world": [
+    {
+     "where": "Delivery promises",
+     "example": "Companies that promise a delivery date and tell customers early when it will slip keep their trust. Hiding the delay loses it."
+    }
+   ]
   },
   "S7": {
    "name": "Win-Win Agreement components",
-   "prerequisites": []
+   "prerequisites": [],
+   "real_world": [
+    {
+     "where": "Service agreements",
+     "example": "A service-level agreement states who does what, by when, how it is checked and what happens if it is missed."
+    }
+   ]
   },
   "S8": {
    "name": "Reflection and accountable action",
-   "prerequisites": []
+   "prerequisites": [],
+   "real_world": [
+    {
+     "where": "Performance reviews",
+     "example": "A review that ends in a specific, checkable action ('send the report by Friday') changes more than a general 'try harder'."
+    }
+   ]
   }
  },
  "misconceptions": {
-  "WW-NAMES": {
-   "name": "Mixes up the mindset names",
-   "belief": "Win-Win, Win-Lose and Lose-Win are interchangeable names.",
-   "kind": "belief",
-   "competency_ids": [
-    "S2"
-   ],
-   "student": "Say who gets what they need in each one before naming it.",
-   "teacher": "Sort short situations into the three mindsets, asking who gets what they need each time.",
-   "content": null,
-   "exit_check": "A friend always picks the film and you never say what you want. Name the mindset and say why."
-  },
-  "WW-GIVE-IN": {
-   "name": "Treats Win-Win as one person giving in",
-   "belief": "Win-Win means I should just agree.",
-   "kind": "belief",
-   "competency_ids": [
-    "S1"
-   ],
-   "student": "Ask: did what matters to me get said too?",
-   "teacher": "Use the lesson's point that Win-Win does not mean both get their first choice; contrast giving in with looking for a third option.",
-   "content": null,
-   "exit_check": "Your friend wants to leave early and you do not. What would Win-Win look like? Why is giving in not the same?"
-  },
-  "WW-INSIST": {
-   "name": "Treats a good outcome as getting my way",
-   "belief": "My idea matters more than the other person's.",
+  "WW-SOMEONE-LOSES": {
+   "name": "Thinks someone has to lose",
+   "belief": "\"If we disagree, either I give in or I get my way.\"",
+   "looks_like": "Picks 'I give up every time' or 'I get my way'. Written answers have only one person getting what they need.",
    "kind": "belief",
    "competency_ids": [
     "S1",
-    "S2"
+    "S2",
+    "S4"
    ],
-   "student": "Before deciding, say what the other person needs.",
-   "teacher": "Use Courage and Consideration: keep the courage to speak and add consideration for the other person.",
+   "student": "Before you decide, ask: does this work for both of us?",
+   "teacher": "Win-Win does not mean both get their first choice. Replay one disagreement three ways (I give in, I win, we find a third option) and ask who gets what they need each time.",
    "content": null,
-   "exit_check": "Your group must pick one topic and you love yours. What do you say first?"
+   "exit_check": "Your friend wants to leave early and you do not. What would a Win-Win look like?",
+   "in_practice": "Giving in every time builds resentment, and winning every time loses partners. Both kinds of deal tend to fall apart."
   },
-  "WW-ONE-SIDED": {
-   "name": "Decides without asking what the other person needs",
-   "belief": "One side's need is enough to decide.",
+  "WW-NOT-ASKING": {
+   "name": "Doesn't find out what the other person needs",
+   "belief": "\"I already know what is fair. I don't need to ask or listen.\"",
+   "looks_like": "Decides for both people without asking. Answers a classmate by correcting or ignoring them.",
    "kind": "belief",
    "competency_ids": [
     "S3",
-    "S4"
-   ],
-   "student": "Write one question that finds out what the other person needs.",
-   "teacher": "Practise asking before proposing: each pair states both needs, then one option that serves both.",
-   "content": null,
-   "exit_check": "Two teams want the hall at the same time. What do you ask before suggesting a plan?"
-  },
-  "WW-DISMISS": {
-   "name": "Responds without listening",
-   "belief": "Disagreeing means correcting or ignoring.",
-   "kind": "belief",
-   "competency_ids": [
+    "S4",
     "S5"
    ],
-   "student": "Say back what you heard, then ask one respectful question.",
-   "teacher": "Model acknowledging a view before sharing your own; pairs rehearse with a low-stakes disagreement.",
+   "student": "Ask one question about what the other person needs before you suggest anything.",
+   "teacher": "Practise 'ask, then suggest': each partner says what they need, the other repeats it back, then they propose one option that works for both.",
    "content": null,
-   "exit_check": "Write one sentence that shows you heard a classmate you disagree with."
+   "exit_check": "Two teams want the hall at the same time. What do you ask before suggesting a plan?",
+   "in_practice": "Deciding for someone without asking is why many plans miss what people actually need."
   },
-  "WW-AVOID": {
-   "name": "Avoids or hides a broken promise",
-   "belief": "If I say nothing, trust is not affected.",
+  "WW-LOOSE-PROMISE": {
+   "name": "Thinks meaning well is enough to keep trust",
+   "belief": "\"If I mean well, I don't need to say exactly what I'll do, or tell anyone when I can't.\"",
+   "looks_like": "Says nothing about a broken promise, makes promises like 'I will be nice', or writes agreements with no who, when or check.",
    "kind": "belief",
    "competency_ids": [
-    "S6"
-   ],
-   "student": "Tell the person early, say what happened, agree a next step.",
-   "teacher": "Use the Emotional Bank Account as a metaphor: telling early protects trust, hiding withdraws from it.",
-   "content": null,
-   "exit_check": "You cannot finish your part by the agreed time. What do you do, and when?"
-  },
-  "WW-VAGUE": {
-   "name": "Makes a promise too general to check",
-   "belief": "Meaning well is the same as a clear commitment.",
-   "kind": "belief",
-   "competency_ids": [
+    "S6",
+    "S7",
     "S8"
    ],
-   "student": "Add when, with whom, and how you will know you did it.",
-   "teacher": "Rewrite broad promises like 'be nicer' into an action, a time and a check.",
+   "student": "Make your promise checkable: what, when, and how you will know. If you can't keep it, say so early.",
+   "teacher": "Turn vague promises into an action, a time and a check. Use the Emotional Bank Account: telling early protects trust, hiding it withdraws. Then build one agreement with all five parts.",
    "content": null,
-   "exit_check": "Rewrite 'I will be helpful' as a promise you could check this week."
+   "exit_check": "You cannot finish your part by the agreed time. What do you do, and when?",
+   "in_practice": "'I'll do better' cannot be checked. Workplaces ask for specific, dated commitments, and hiding a missed one costs more trust than missing it."
   },
-  "WW-AGREEMENT": {
-   "name": "Treats an agreement as a general rule",
-   "belief": "An agreement is a rule or a promise, without clear parts.",
-   "kind": "belief",
+  "WW-NAMES": {
+   "name": "Mixes up the names Win-Win, Win-Lose and Lose-Win",
+   "belief": "Not a thinking error: the student has not learnt which name goes with which situation yet.",
+   "looks_like": "Picks the wrong name for a clear situation, such as calling 'I always let my friend choose' Win-Win.",
+   "kind": "fact",
    "competency_ids": [
-    "S7"
+    "S2"
    ],
-   "student": "Check for all five parts before you finish.",
-   "teacher": "Build one agreement together using Desired Results, Guidelines, Resources, Accountability and Consequences.",
+   "student": "For each situation, say who gets what they need, then name it.",
+   "teacher": "Sort short situations into the three mindsets, asking who gets what they need each time.",
    "content": null,
-   "exit_check": "You and a friend share a bicycle. Write the five parts of your agreement."
+   "exit_check": "A friend always picks the film and you never say what you want. Name the mindset and say why.",
+   "in_practice": "Without names for these approaches, it is hard to spot win-lose behaviour in a meeting and say so."
   },
   "H4-PARTIAL": {
-   "name": "Partly shown",
-   "belief": "On the right track; part of what the rubric looks for is missing.",
+   "name": "Partly there",
+   "belief": "On the right track, but the answer misses part of what the question asks for.",
    "kind": "slip",
    "competency_ids": [
     "S1",
@@ -162,46 +181,95 @@
    "student": "Look at the rubric's next level and add the missing part.",
    "teacher": null,
    "content": null,
-   "exit_check": null
+   "exit_check": null,
+   "in_practice": "The idea is there but not complete. Practice turns it into a habit you can use at work.",
+   "looks_like": "The idea is right but one piece is missing, such as a promise with an action but no way to check it."
   }
  },
  "teaching_order": [
-  "WW-NAMES",
-  "WW-GIVE-IN",
-  "WW-INSIST",
-  "WW-ONE-SIDED",
-  "WW-DISMISS",
-  "WW-AVOID",
-  "WW-VAGUE",
-  "WW-AGREEMENT"
+  "WW-SOMEONE-LOSES",
+  "WW-NOT-ASKING",
+  "WW-LOOSE-PROMISE"
  ],
  "probes": {
-  "WW-NAMES": "A student always lets others choose. Which mindset is that, and who is not getting what they need?",
-  "WW-GIVE-IN": "If you agree just to stop an argument, is that Win-Win? Why or why not?",
-  "WW-INSIST": "Your idea was not chosen. What would still make the result fair?",
-  "WW-ONE-SIDED": "What would you need to know from the other person before you decide?",
-  "WW-DISMISS": "A classmate disagrees with you. What is the first thing you would say?",
-  "WW-AVOID": "You realise you cannot keep a promise. Who do you tell, and when?",
-  "WW-VAGUE": "How would someone else know that you kept this promise?",
-  "WW-AGREEMENT": "What would your agreement say about what happens if someone does not do their part?"
+  "WW-SOMEONE-LOSES": "If you agree just to stop an argument, is that Win-Win? Why or why not?",
+  "WW-NOT-ASKING": "What would you need to know from the other person before you decide?",
+  "WW-LOOSE-PROMISE": "How would someone else know that you kept this promise?",
+  "WW-NAMES": "A student always lets others choose. Which mindset is that, and who is not getting what they need?"
  },
  "separating_probes": [
   {
    "codes": [
-    "WW-GIVE-IN",
-    "WW-INSIST"
-   ],
-   "probe": "When two friends disagree, who should change their mind, and why?"
-  },
-  {
-   "codes": [
-    "WW-INSIST",
+    "WW-SOMEONE-LOSES",
     "WW-NAMES"
    ],
    "probe": "Name the mindset in 'my idea must be chosen'. Would you do it that way yourself?"
   }
  ],
  "interventions": {
+  "INT-H4-THIRD-OPTION": {
+   "title": "Win-Win is not giving in or winning (lesson: h4-mindsets)",
+   "objective": null,
+   "steps": [
+    "Replay one disagreement three ways: I give in, I win, we find a third option.",
+    "Ask who gets what they need each time.",
+    "Students write a third option for a new disagreement."
+   ],
+   "duration_minutes": [
+    10,
+    15
+   ],
+   "assets": [],
+   "item_types": [
+    "choice",
+    "written"
+   ],
+   "exit_check": null,
+   "review_status": "draft",
+   "version": "habit4-draft-0.2"
+  },
+  "INT-H4-ASK-FIRST": {
+   "title": "Ask before you decide (lesson: h4-mindsets)",
+   "objective": null,
+   "steps": [
+    "Each partner says what they need.",
+    "The other repeats it back before replying.",
+    "Together, propose one option that works for both."
+   ],
+   "duration_minutes": [
+    10,
+    15
+   ],
+   "assets": [],
+   "item_types": [
+    "choice",
+    "written"
+   ],
+   "exit_check": null,
+   "review_status": "draft",
+   "version": "habit4-draft-0.2"
+  },
+  "INT-H4-PROMISES": {
+   "title": "Promises people can check (lesson: h4-promises)",
+   "objective": null,
+   "steps": [
+    "Rewrite a vague promise as an action, a time and a check.",
+    "Role-play telling someone early when a promise slips.",
+    "Build one agreement with all five parts."
+   ],
+   "duration_minutes": [
+    15,
+    20
+   ],
+   "assets": [],
+   "item_types": [
+    "choice",
+    "written"
+   ],
+   "exit_check": null,
+   "review_status": "draft",
+   "version": "habit4-draft-0.2"
+  },
   "INT-H4-NAMES": {
    "title": "Telling the mindsets apart (lesson: h4-mindsets)",
    "objective": null,
@@ -221,154 +289,7 @@
    ],
    "exit_check": null,
    "review_status": "draft",
-   "version": "habit4-draft-0.1"
-  },
-  "INT-H4-GIVE-IN": {
-   "title": "Win-Win is not giving in (lesson: h4-mindsets)",
-   "objective": null,
-   "steps": [
-    "Contrast giving in with looking for a third option.",
-    "Replay one scenario both ways.",
-    "Students write an option that considers both."
-   ],
-   "duration_minutes": [
-    10,
-    15
-   ],
-   "assets": [],
-   "item_types": [
-    "choice",
-    "written"
-   ],
-   "exit_check": null,
-   "review_status": "draft",
-   "version": "habit4-draft-0.1"
-  },
-  "INT-H4-INSIST": {
-   "title": "Courage with consideration (lesson: h4-mindsets)",
-   "objective": null,
-   "steps": [
-    "Revisit courage and consideration.",
-    "Find what the other person needs in a scenario.",
-    "Rewrite a demand as a shared proposal."
-   ],
-   "duration_minutes": [
-    10,
-    15
-   ],
-   "assets": [],
-   "item_types": [
-    "choice",
-    "written"
-   ],
-   "exit_check": null,
-   "review_status": "draft",
-   "version": "habit4-draft-0.1"
-  },
-  "INT-H4-ONE-SIDED": {
-   "title": "Ask before deciding (lesson: h4-mindsets)",
-   "objective": null,
-   "steps": [
-    "Each partner states what they need.",
-    "Write one respectful question.",
-    "Propose an option and check it with both."
-   ],
-   "duration_minutes": [
-    10,
-    15
-   ],
-   "assets": [],
-   "item_types": [
-    "choice",
-    "written"
-   ],
-   "exit_check": null,
-   "review_status": "draft",
-   "version": "habit4-draft-0.1"
-  },
-  "INT-H4-DISMISS": {
-   "title": "Listening when you disagree (lesson: h4-mindsets)",
-   "objective": null,
-   "steps": [
-    "Model acknowledging before responding.",
-    "Pairs rehearse with a low-stakes disagreement.",
-    "Write a sentence that shows listening."
-   ],
-   "duration_minutes": [
-    10,
-    15
-   ],
-   "assets": [],
-   "item_types": [
-    "choice",
-    "written"
-   ],
-   "exit_check": null,
-   "review_status": "draft",
-   "version": "habit4-draft-0.1"
-  },
-  "INT-H4-AVOID": {
-   "title": "Protecting trust when a promise slips (lesson: h4-promises)",
-   "objective": null,
-   "steps": [
-    "Use the Emotional Bank Account metaphor.",
-    "Compare telling early with hiding it.",
-    "Write what to say and when."
-   ],
-   "duration_minutes": [
-    10,
-    15
-   ],
-   "assets": [],
-   "item_types": [
-    "choice",
-    "written"
-   ],
-   "exit_check": null,
-   "review_status": "draft",
-   "version": "habit4-draft-0.1"
-  },
-  "INT-H4-VAGUE": {
-   "title": "Promises you can check (lesson: h4-promises)",
-   "objective": null,
-   "steps": [
-    "Compare a broad promise with a specific one.",
-    "Add action, time and check.",
-    "Rewrite a promise of your own."
-   ],
-   "duration_minutes": [
-    10,
-    15
-   ],
-   "assets": [],
-   "item_types": [
-    "choice",
-    "written"
-   ],
-   "exit_check": null,
-   "review_status": "draft",
-   "version": "habit4-draft-0.1"
-  },
-  "INT-H4-AGREEMENT": {
-   "title": "The five parts of an agreement (lesson: h4-agreements)",
-   "objective": null,
-   "steps": [
-    "Name the five parts.",
-    "Build one agreement together.",
-    "Check a sample agreement for missing parts."
-   ],
-   "duration_minutes": [
-    10,
-    15
-   ],
-   "assets": [],
-   "item_types": [
-    "choice",
-    "written"
-   ],
-   "exit_check": null,
-   "review_status": "draft",
-   "version": "habit4-draft-0.1"
+   "version": "habit4-draft-0.2"
   },
   "INT-H4-PRACTICE": {
    "title": "Reaching the next rubric level",
@@ -388,33 +309,21 @@
    ],
    "exit_check": null,
    "review_status": "draft",
-   "version": "habit4-draft-0.1"
+   "version": "habit4-draft-0.2"
   }
  },
  "intervention_map": {
+  "WW-SOMEONE-LOSES": [
+   "INT-H4-THIRD-OPTION"
+  ],
+  "WW-NOT-ASKING": [
+   "INT-H4-ASK-FIRST"
+  ],
+  "WW-LOOSE-PROMISE": [
+   "INT-H4-PROMISES"
+  ],
   "WW-NAMES": [
    "INT-H4-NAMES"
-  ],
-  "WW-GIVE-IN": [
-   "INT-H4-GIVE-IN"
-  ],
-  "WW-INSIST": [
-   "INT-H4-INSIST"
-  ],
-  "WW-ONE-SIDED": [
-   "INT-H4-ONE-SIDED"
-  ],
-  "WW-DISMISS": [
-   "INT-H4-DISMISS"
-  ],
-  "WW-AVOID": [
-   "INT-H4-AVOID"
-  ],
-  "WW-VAGUE": [
-   "INT-H4-VAGUE"
-  ],
-  "WW-AGREEMENT": [
-   "INT-H4-AGREEMENT"
   ],
   "H4-PARTIAL": [
    "INT-H4-PRACTICE"
@@ -437,9 +346,9 @@
    },
    "key": "C",
    "distractors": {
-    "A": "WW-INSIST",
-    "B": "WW-GIVE-IN",
-    "D": "WW-AVOID"
+    "A": "WW-SOMEONE-LOSES",
+    "B": "WW-SOMEONE-LOSES",
+    "D": "WW-NOT-ASKING"
    }
   },
   {
@@ -479,9 +388,9 @@
    },
    "key": "C",
    "distractors": {
-    "A": "WW-INSIST",
-    "B": "WW-GIVE-IN",
-    "D": "WW-ONE-SIDED"
+    "A": "WW-SOMEONE-LOSES",
+    "B": "WW-SOMEONE-LOSES",
+    "D": "WW-NOT-ASKING"
    }
   },
   {
@@ -500,9 +409,9 @@
    },
    "key": "C",
    "distractors": {
-    "A": "WW-INSIST",
-    "B": "WW-AVOID",
-    "D": "WW-INSIST"
+    "A": "WW-SOMEONE-LOSES",
+    "B": "WW-SOMEONE-LOSES",
+    "D": "WW-SOMEONE-LOSES"
    }
   },
   {
@@ -521,9 +430,9 @@
    },
    "key": "B",
    "distractors": {
-    "A": "WW-DISMISS",
-    "C": "WW-DISMISS",
-    "D": "WW-DISMISS"
+    "A": "WW-NOT-ASKING",
+    "C": "WW-NOT-ASKING",
+    "D": "WW-NOT-ASKING"
    }
   },
   {
@@ -542,9 +451,9 @@
    },
    "key": "C",
    "distractors": {
-    "A": "WW-AVOID",
-    "B": "WW-AVOID",
-    "D": "WW-AVOID"
+    "A": "WW-LOOSE-PROMISE",
+    "B": "WW-LOOSE-PROMISE",
+    "D": "WW-LOOSE-PROMISE"
    }
   },
   {
@@ -563,9 +472,9 @@
    },
    "key": "A",
    "distractors": {
-    "B": "WW-AGREEMENT",
-    "C": "WW-AGREEMENT",
-    "D": "WW-AGREEMENT"
+    "B": "WW-LOOSE-PROMISE",
+    "C": "WW-LOOSE-PROMISE",
+    "D": "WW-LOOSE-PROMISE"
    }
   },
   {
@@ -584,9 +493,9 @@
    },
    "key": "C",
    "distractors": {
-    "A": "WW-VAGUE",
-    "B": "WW-VAGUE",
-    "D": "WW-VAGUE"
+    "A": "WW-LOOSE-PROMISE",
+    "B": "WW-LOOSE-PROMISE",
+    "D": "WW-LOOSE-PROMISE"
    }
   },
   {
@@ -629,8 +538,7 @@
    },
    "levels": {
     "1": [
-     "WW-GIVE-IN",
-     "WW-INSIST"
+     "WW-SOMEONE-LOSES"
     ],
     "2": [
      "H4-PARTIAL"
@@ -667,7 +575,7 @@
    "levels": {
     "1": [
      "WW-NAMES",
-     "WW-INSIST"
+     "WW-SOMEONE-LOSES"
     ],
     "2": [
      "H4-PARTIAL"
@@ -703,7 +611,7 @@
    },
    "levels": {
     "1": [
-     "WW-ONE-SIDED"
+     "WW-NOT-ASKING"
     ],
     "2": [
      "H4-PARTIAL"
@@ -739,7 +647,7 @@
    },
    "levels": {
     "1": [
-     "WW-ONE-SIDED"
+     "WW-NOT-ASKING"
     ],
     "2": [
      "H4-PARTIAL"
@@ -774,7 +682,7 @@
    },
    "levels": {
     "1": [
-     "WW-DISMISS"
+     "WW-NOT-ASKING"
     ],
     "2": [
      "H4-PARTIAL"
@@ -810,7 +718,7 @@
    },
    "levels": {
     "1": [
-     "WW-AVOID"
+     "WW-LOOSE-PROMISE"
     ],
     "2": [
      "H4-PARTIAL"
@@ -848,7 +756,7 @@
    },
    "levels": {
     "1": [
-     "WW-AGREEMENT"
+     "WW-LOOSE-PROMISE"
     ],
     "2": [
      "H4-PARTIAL"
@@ -884,7 +792,7 @@
    },
    "levels": {
     "1": [
-     "WW-VAGUE"
+     "WW-LOOSE-PROMISE"
     ],
     "2": [
      "H4-PARTIAL"

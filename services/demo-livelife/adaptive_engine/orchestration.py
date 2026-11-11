@@ -14,7 +14,11 @@ PRACTICE_ITEMS_PER_GROUP = 2
 
 
 def _practice_items(pack, evidence_item_id):
-    return [pack.parallel(pack.item(evidence_item_id), PRACTICE_ATTEMPT_BASE + i) for i in range(PRACTICE_ITEMS_PER_GROUP)]
+    """Parallel practice from the pack's bank. A paper with no bank (a generic paper) has none: the AI step drafts the worksheet."""
+    try:
+        return [pack.parallel(pack.item(evidence_item_id), PRACTICE_ATTEMPT_BASE + i) for i in range(PRACTICE_ITEMS_PER_GROUP)]
+    except ValueError:
+        return []
 
 
 def plan_sessions(pack, groups, evidence_item_for, period_minutes=DEFAULT_PERIOD_MINUTES, cohorts=(), card_groups=()):

@@ -15,6 +15,7 @@ engine change. Field meanings follow the data model in section 7 of the concept 
   brief            the subject and curriculum context given to every AI call for this pack
   upload_hint      how answers should be written in the bulk file
   sample           (pack, round) -> a synthetic CSV for trying the flow
+  policy           routing settings (see policy.py): when to group, who fixes each error; a class may override them
 """
 from dataclasses import dataclass, field
 from typing import Callable, Dict, FrozenSet, List, Optional, Tuple
@@ -44,6 +45,7 @@ class ChapterPack:
     brief: str = ""
     upload_hint: str = ""
     sample: Optional[Callable[["ChapterPack", str], str]] = None
+    policy: Dict[str, object] = field(default_factory=dict)
 
     @property
     def slips(self):
@@ -72,7 +74,13 @@ class ChapterPack:
             "questions": [{"id": i["id"], "text": i["text"], "competency_ids": i["competency_ids"], "level": i.get("level"), "icon": i.get("icon"),
                            "answer": str(i.get("correct") or i.get("answer") or i.get("key") or "Reasoned answer")} for i in self.items],
             "interventions": {"total": len(statuses), "approved": statuses.count("approved")},
+            "policy": self.settings(),
         }
+
+    def settings(self, overrides=None):
+        """The routing rules in force: engine defaults, this pack's, then a class's overrides."""
+        from .policy import resolve
+        return resolve(self.policy, overrides)
 
     def item(self, item_id):
         return next(item for item in self.items if item["id"] == item_id)

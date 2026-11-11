@@ -70,7 +70,7 @@ def test_p06_bare_answers_are_only_likely_and_blank_goes_to_teacher(students):
     p06 = students["P06"]
     assert p06["summary"]["MC-L"]["status"] == "likely"
     assert p06["summary"]["MC-L"]["highs"] == 0
-    assert p06["next"]["action"] == "probe" and p06["next"]["probe"]
+    assert p06["next"] == {"action": "group", "target": "MC-L", "held_for_later": [], "evidence": "likely"}
     assert p06["teacher"] == ["T4"]
 
 
@@ -167,7 +167,8 @@ def test_class_view_on_the_sample():
     assert set(rows["SLIP-F"]["remedies"]) == {"student"}
     assert rows["MC-U"]["owners"] == ["teacher", "student"]  # 1 of 6 is 16.7%
     assert rows["MC-U"]["awaiting_expert_draft"] == []
-    assert view["proposed_groups"]["MC-L"] == ["P02"]
+    assert view["proposed_groups"]["MC-L"] == ["P02", "P06"]
+    assert rows["MC-L"]["evidence"] == {"P02": "confirmed", "P06": "likely"} and rows["MC-L"]["grouped_here"] == ["P02", "P06"]
     assert view["extension"] == ["P01"]
     assert view["teacher_queue"] == [{"student": "P06", "questions": ["T4"]}]
     assert view["unmapped_answers"] == 0

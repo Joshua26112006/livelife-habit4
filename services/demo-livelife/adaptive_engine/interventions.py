@@ -26,6 +26,7 @@ def _mapping(pack, diagnosis, code, allow_draft, preferred):
     usable = [i for i in ranked if allow_draft or pack.interventions[i]["review_status"] == "approved"]
     return {
         "misconception_id": code,
+        "status": diagnosis["summary"][code]["status"],
         "competency_ids": pack.misconceptions[code]["competency_ids"],
         "candidates": ranked,
         "recommended": usable[0] if usable else None,

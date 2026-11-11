@@ -37,16 +37,25 @@ def approved_cycle():
 
 
 # Module 3 additions
-def test_uncertain_hypothesis_triggers_a_probe_not_a_label():
+def test_uncertain_hypothesis_is_grouped_by_default_and_keeps_its_evidence_strength():
     p06 = diagnose_student(PACK, SHEET["P06"])
     record = next(h for h in p06["hypotheses"] if h["misconception_id"] == "MC-L")
-    assert (record["status"], record["follow_up_action"], record["confidence"]) == ("likely", "probe", "medium")
+    assert (record["status"], record["follow_up_action"], record["confidence"]) == ("likely", "intervene", "medium")
+    assert p06["next"] == {"action": "group", "target": "MC-L", "held_for_later": [], "evidence": "likely"}
     assert record["competency_ids"] == ["PROB-02"] and record["evidence"]
+
+
+def test_uncertain_hypothesis_triggers_a_probe_when_the_class_asks_for_confirmed_evidence():
+    p06 = diagnose_student(PACK, SHEET["P06"], policy=PACK.settings({"group_from": "confirmed"}))
+    record = next(h for h in p06["hypotheses"] if h["misconception_id"] == "MC-L")
+    assert (record["status"], record["follow_up_action"], record["confidence"]) == ("likely", "probe", "medium")
+    assert p06["next"]["action"] == "probe"
 
 
 @pytest.mark.parametrize("outcome, action", [("supports", "group"), ("rules_out", "teacher_review")])
 def test_probe_result_updates_the_route(outcome, action):
-    diagnosis = apply_probe(PACK, diagnose_student(PACK, SHEET["P06"]), "MC-L", outcome)
+    policy = PACK.settings({"group_from": "confirmed"})
+    diagnosis = apply_probe(PACK, diagnose_student(PACK, SHEET["P06"], policy=policy), "MC-L", outcome, policy)
     assert diagnosis["next"]["action"] == action
 
 

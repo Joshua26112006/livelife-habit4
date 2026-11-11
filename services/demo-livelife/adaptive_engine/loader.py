@@ -1,15 +1,20 @@
 """Loading a subject pack written as data, and checking it before the engine trusts it.
 
-A subject team writes pack.json (and, optionally, sample_v1.csv and sample_v2.csv beside it); nothing else is needed.
+A subject team writes pack.json (and, optionally, sample_v1 and sample_v2 beside it, as .json in the handwriting reader's
+format or as .csv); nothing else is needed.
 """
 import json
 from pathlib import Path
 
 from .pack import ChapterPack
+from .policy import problems as policy_problems
 from .reading import FORMATS
 
 REQUIRED = ("chapter_id", "version", "subject", "brief", "competencies", "misconceptions", "teaching_order", "interventions", "intervention_map", "items")
 KINDS = ("belief", "slip", "fact")
+# A teacher has to be able to hold every thinking error in mind and explain it. More than this and they are restating wrong
+# answers, not naming causes: merge them. Slips and missing facts do not count.
+MAX_THINKING_ERRORS = 5
 
 
 class PackError(ValueError):
@@ -26,6 +31,15 @@ def validate(data):
         if entry.get("kind") not in KINDS:
             problems.append(f"{code}: kind must be one of {', '.join(KINDS)}")
         problems += [f"{code}: unknown competency {c}" for c in entry.get("competency_ids", []) if c not in competencies]
+    beliefs = [c for c, e in data["misconceptions"].items() if e.get("kind") == "belief"]
+    if len(beliefs) > MAX_THINKING_ERRORS:
+        problems.append(f"{len(beliefs)} thinking errors; keep to {MAX_THINKING_ERRORS} a teacher can explain, and merge the rest")
+    problems += [f"{c}: say what it looks like in answers ('looks_like'), in words a teacher would use" for c in beliefs
+                 if not str(data["misconceptions"][c].get("looks_like") or "").strip()]
+    for comp, entry in [*data["competencies"].items(), *data["misconceptions"].items()]:
+        if any(not (isinstance(x, dict) and x.get("where") and x.get("example")) for x in entry.get("real_world", [])):
+            problems.append(f"{comp}: each real_world entry needs 'where' and 'example'")
+    problems += policy_problems(data.get("policy", {}), codes)
     problems += [f"teaching order: unknown code {c}" for c in data["teaching_order"] if c not in codes]
     for code, ids in data["intervention_map"].items():
         if code not in codes:
@@ -57,10 +71,13 @@ def validate(data):
 def build(data, folder=None):
     validate(data)
     folder = Path(folder) if folder else None
-    has_samples = folder is not None and (folder / "sample_v1.csv").exists()
+    def sample_file(round_name):
+        return next((folder / f"sample_{round_name}.{ext}" for ext in ("json", "csv") if (folder / f"sample_{round_name}.{ext}").exists()), None)
+
+    has_samples = folder is not None and sample_file("v1") is not None
 
     def sample(_pack, round_name):
-        return (folder / f"sample_{round_name}.csv").read_text()
+        return sample_file(round_name).read_text()
 
     return ChapterPack(
         chapter_id=data["chapter_id"], version=data["version"], competencies=data["competencies"], items=data["items"],
@@ -68,7 +85,7 @@ def build(data, folder=None):
         separating_probes={frozenset(x["codes"]): x["probe"] for x in data.get("separating_probes", [])},
         interventions={k: {**v, "duration_minutes": tuple(v["duration_minutes"])} for k, v in data["interventions"].items()},
         intervention_map=data["intervention_map"], subject=data["subject"], brief=data["brief"], upload_hint=data.get("upload_hint", ""),
-        extension_task=data.get("extension_task", ""), sample=sample if has_samples else None,
+        extension_task=data.get("extension_task", ""), sample=sample if has_samples else None, policy=data.get("policy", {}),
     )
 
 

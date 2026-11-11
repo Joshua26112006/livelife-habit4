@@ -6,6 +6,8 @@ Question formats:
             the known wrong values and the misconception each shows, and a slip code for a right set-up with a wrong last line
   written   answered in words and marked 0-4 against the item's rubric (by the AI step); each level maps to patterns:
             3 or 4 shown; 1 or 2 the patterns listed for that level; 0 blank, irrelevant or flagged, for the teacher
+  judged    any question with an expected answer, already marked against it (generic.py): the answer arrives as
+            {text, result, code, step, evidence, shown}; a wrong answer shows the thinking error it was grouped under
 Anything a format cannot place is UNMAPPED, and the AI step may place it, choosing only from the catalogue.
 A subject that can compute its answers exactly may add a plugin reader instead (see ChapterPack.read_answer).
 """
@@ -104,7 +106,27 @@ def _numeric(item, raw, trace):
     return trace
 
 
-FORMATS = {"choice": _choice, "written": _written, "numeric": _numeric}
+def _judged(item, raw, trace):
+    answer = raw if isinstance(raw, dict) else {"text": raw or ""}
+    text, result = (answer.get("text") or "").strip(), answer.get("result")
+    trace.update(working=text, shows_working=result == "correct" or bool(answer.get("shown")))
+    if not text:
+        trace["result"] = "blank"
+    elif result in ("correct", "correct_no_working"):
+        trace["result"] = "correct"
+        trace["shows_working"] = result == "correct"
+    elif result == "wrong":
+        trace["result"] = "wrong"
+        step = answer.get("step") or "-"
+        trace["findings"].append(_finding(answer.get("code") or UNMAPPED, step, "high" if answer.get("shown") else "medium",
+                                          answer.get("evidence") or "wrong answer"))
+        trace["steps"][step] = "went wrong here"
+    else:
+        trace["result"] = "unreadable"
+    return trace
+
+
+FORMATS = {"choice": _choice, "written": _written, "numeric": _numeric, "judged": _judged}
 
 
 def read(item, raw):

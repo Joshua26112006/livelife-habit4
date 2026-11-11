@@ -3,15 +3,19 @@
 Output per student: observed evidence, hypotheses with confidence, and the next diagnostic action. A misconception is a
 hypothesis, never a fact from one wrong answer:
   confirmed   two or more questions, at least one high
-  likely      two or more questions, all medium; probe first
-  candidate   one question; probe
+  likely      two or more questions, all medium
+  candidate   one question
   ruled_out   a follow-up probe went against it
   A blank or unreadable answer goes to the teacher and is never counted as wrong.
 
-Routing starts with the earliest confirmed belief in teaching order; the others stay on the profile for later sessions.
+The class policy's group_from (policy.py) says which of these is enough to club a student with others showing the same thinking
+error. By default every status is: students are grouped by error at once, and each group records how strong each member's
+evidence is. Weaker evidence than group_from gets a follow-up question first. A student's group is their strongest-evidence error,
+earliest in teaching order; the others stay on the profile for later sessions.
 Slips get practice only. Nobody is sent to extension while any answer is waiting for a teacher.
 """
 from .pack import NO_EVIDENCE_RESULTS, UNMAPPED
+from .policy import STRENGTH, groupable
 
 PROBE_OUTCOMES = ("supports", "rules_out")
 
@@ -62,11 +66,12 @@ def _two_explanations(pack, traces, summary):
     return out
 
 
-def _route(pack, summary, teacher):
-    confirmed = _with_status(pack, summary, "confirmed")
-    if confirmed:
-        return {"action": "group", "target": confirmed[0], "held_for_later": confirmed[1:]}
-    unsure = _with_status(pack, summary, "likely", "candidate")
+def _route(pack, summary, teacher, policy):
+    enough = groupable(policy)
+    ready = [code for status in enough for code in _with_status(pack, summary, status)]
+    if ready:
+        return {"action": "group", "target": ready[0], "held_for_later": ready[1:], "evidence": summary[ready[0]]["status"]}
+    unsure = _with_status(pack, summary, *[s for s in STRENGTH if s not in enough])
     if unsure:
         return {"action": "probe", "target": unsure[0], "probe": pack.probes.get(unsure[0])}
     practice = [code for code, entry in pack.misconceptions.items() if entry["kind"] in ("slip", "fact") and code in summary]
@@ -75,9 +80,9 @@ def _route(pack, summary, teacher):
     return {"action": "teacher_review"} if teacher else {"action": "extension"}
 
 
-def _hypotheses(pack, student_id, summary, traces):
+def _hypotheses(pack, student_id, summary, traces, policy):
     """MisconceptionHypothesis records: evidence-linked, with confidence and the follow-up action."""
-    follow_up = {"confirmed": "intervene", "likely": "probe", "candidate": "probe", "slip": "practice", "gap": "practice"}
+    follow_up = {**{s: "intervene" if s in groupable(policy) else "probe" for s in STRENGTH}, "slip": "practice", "gap": "practice"}
     records = []
     for code, entry in summary.items():
         if code == UNMAPPED or entry["status"] == "ruled_out":
@@ -96,17 +101,18 @@ def _hypotheses(pack, student_id, summary, traces):
     return records
 
 
-def _finish(pack, diagnosis):
-    """Recompute everything that follows from the traces and the (possibly probe-updated) summary."""
+def finish(pack, diagnosis, policy=None):
+    """Recompute everything that follows from the traces and the (possibly probe-updated) summary, under the class policy."""
+    policy = policy or pack.settings()
     traces, summary = diagnosis["traces"], diagnosis["summary"]
-    diagnosis["next"] = _route(pack, summary, diagnosis["teacher"])
+    diagnosis["next"] = _route(pack, summary, diagnosis["teacher"], policy)
     diagnosis["two_explanations"] = _two_explanations(pack, traces, summary)
-    diagnosis["hypotheses"] = _hypotheses(pack, diagnosis["student"], summary, traces)
+    diagnosis["hypotheses"] = _hypotheses(pack, diagnosis["student"], summary, traces, policy)
     return diagnosis
 
 
 def _apply_ai_reading(pack, trace, hint):
-    """A catalogue-limited AI reading of an answer the rules could not place. Medium confidence, so alone it only prompts a probe."""
+    """A catalogue-limited AI reading of an answer the rules could not place. Medium confidence: it counts as one question's evidence."""
     if not hint or pack.misconceptions.get(hint.get("code"), {}).get("kind") != "belief":
         return trace
     unplaced = trace["result"] == "argument_unclear" or any(f["belief"] == UNMAPPED for f in trace["findings"])
@@ -116,17 +122,17 @@ def _apply_ai_reading(pack, trace, hint):
     return trace
 
 
-def diagnose_student(pack, sheet, items=None):
+def diagnose_student(pack, sheet, items=None, policy=None):
     """One response sheet -> traces, evidence summary, hypotheses, next step and the teacher's queue."""
     answers, hints = sheet.get("answers", {}), sheet.get("ai_hints", {})
     traces = [_apply_ai_reading(pack, pack.read(item, answers.get(item["id"], "")), hints.get(item["id"]))
               for item in (pack.items if items is None else items)]
     teacher = [t["q"] for t in traces
                if t["result"] in NO_EVIDENCE_RESULTS or any(f["belief"] == UNMAPPED for f in t["findings"])]
-    return _finish(pack, {"student": sheet["id"], "traces": traces, "summary": weigh(pack, traces), "teacher": teacher})
+    return finish(pack, {"student": sheet["id"], "traces": traces, "summary": weigh(pack, traces), "teacher": teacher}, policy)
 
 
-def apply_probe(pack, diagnosis, code, outcome):
+def apply_probe(pack, diagnosis, code, outcome, policy=None):
     """Record a follow-up probe's result. Supporting evidence confirms the belief; otherwise it is ruled out."""
     if outcome not in PROBE_OUTCOMES:
         raise ValueError(f"unknown probe outcome: {outcome}")
@@ -134,4 +140,4 @@ def apply_probe(pack, diagnosis, code, outcome):
         raise ValueError(f"{code} is not a hypothesis for {diagnosis['student']}")
     diagnosis["summary"][code]["status"] = "confirmed" if outcome == "supports" else "ruled_out"
     diagnosis["summary"][code]["probe_outcome"] = outcome
-    return _finish(pack, diagnosis)
+    return finish(pack, diagnosis, policy)

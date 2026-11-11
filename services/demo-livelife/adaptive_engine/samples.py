@@ -1,5 +1,5 @@
-"""The blank upload template for any pack's paper. Each pack supplies its own synthetic sample."""
-from .bulk import ID_COLUMN, to_csv
+"""The blank upload template for any pack's paper, in the handwriting reader's JSON format. Each pack supplies its own sample."""
+from .bulk import ID_COLUMN, json_template, to_csv
 from .reassessment import build_paper
 
 
@@ -9,4 +9,8 @@ def paper_columns(pack, round_name):
 
 
 def template(pack, round_name):
+    return json_template(paper_columns(pack, round_name)[1])
+
+
+def csv_template(pack, round_name):
     return to_csv(paper_columns(pack, round_name)[0], [])

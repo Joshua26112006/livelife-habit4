@@ -14,11 +14,14 @@ RETEST = "v2"
 
 
 class ClassCycle:
-    def __init__(self, pack, class_id, allow_draft=False, max_group_size=clustering.DEFAULT_MAX_GROUP_SIZE):
+    def __init__(self, pack, class_id, allow_draft=False, max_group_size=None, policy=None):
         self.pack = pack
         self.class_id = class_id
         self.allow_draft = allow_draft
-        self.max_group_size = max_group_size
+        self.overrides = dict(policy or {})
+        if max_group_size is not None:
+            self.overrides["max_group_size"] = max_group_size
+        self.policy = pack.settings(self.overrides)
         self.diagnoses, self.profiles = {}, {}
         self.mappings, self.groups, self.cohorts, self.plan = [], [], [], None
         self.preferred = {}
@@ -33,7 +36,7 @@ class ClassCycle:
     def _refresh(self):
         diagnoses = list(self.diagnoses.values())
         self.mappings = [interventions.map_student(self.pack, d, self.allow_draft, self.preferred) for d in diagnoses]
-        self.groups = clustering.build_groups(self.pack, self.mappings, self.max_group_size)
+        self.groups = clustering.build_groups(self.pack, self.mappings, self.policy["max_group_size"])
         self._set_delivery()
         self._set_cohorts()
         self.plan = None
@@ -45,7 +48,7 @@ class ClassCycle:
         for group in self.groups:
             code = group["misconception_id"]
             showing = sum(code in d["summary"] for d in self.diagnoses.values())
-            group["owners"] = clustering.owners_for(self.pack, code, Fraction(showing, size))
+            group["owners"] = clustering.owners_for(self.pack, code, Fraction(showing, size), self.policy)
             group["delivery"] = "teacher" if "teacher" in group["owners"] else "practice_card"
 
     def _set_cohorts(self):
@@ -55,7 +58,7 @@ class ClassCycle:
     # Module 3
     def run_diagnostic(self, sheets):
         for sheet in sheets:
-            diagnosis = identification.diagnose_student(self.pack, sheet)
+            diagnosis = identification.diagnose_student(self.pack, sheet, policy=self.policy)
             self.diagnoses[sheet["id"]] = diagnosis
             profile = self.profiles.setdefault(sheet["id"], LearnerProfile(self.pack, sheet["id"]))
             profile.add_traces(DIAGNOSTIC, diagnosis["traces"], self.pack.items)
@@ -63,12 +66,22 @@ class ClassCycle:
         self._refresh()
 
     def record_probe(self, student, code, outcome, teacher):
-        identification.apply_probe(self.pack, self.diagnoses[student], code, outcome)
+        identification.apply_probe(self.pack, self.diagnoses[student], code, outcome, self.policy)
         self._log("probe_recorded", teacher, student=student, misconception=code, outcome=outcome)
         self._refresh()
 
     def class_view(self):
-        return clustering.diagnose_class(self.pack, list(self.diagnoses.values()))
+        return clustering.diagnose_class(self.pack, list(self.diagnoses.values()), self.policy)
+
+    def set_policy(self, overrides, teacher="teacher"):
+        """New class rules: every student is routed again and groups are proposed again. Probe results already recorded stay."""
+        self.policy = self.pack.settings(overrides)
+        self.overrides = dict(overrides)
+        for diagnosis in self.diagnoses.values():
+            identification.finish(self.pack, diagnosis, self.policy)
+        self._log("policy_set", teacher, policy=self.overrides)
+        if self.diagnoses:
+            self._refresh()
 
     # Module 4
     def set_preferred(self, preferred):
@@ -143,7 +156,7 @@ class ClassCycle:
         for sheet in sheets:
             if sheet["id"] not in self.diagnoses:
                 continue
-            diagnosis = identification.diagnose_student(self.pack, sheet, self.paper)
+            diagnosis = identification.diagnose_student(self.pack, sheet, self.paper, self.policy)
             self.retests[sheet["id"]] = diagnosis
             self.profiles[sheet["id"]].add_traces(RETEST, diagnosis["traces"], self.paper)
         self.comparison = reassessment.compare_class(self.pack, self.diagnoses, self.retests, self.paper)

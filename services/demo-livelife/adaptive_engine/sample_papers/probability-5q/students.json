@@ -1,0 +1,374 @@
+{
+  "students": [
+    {
+      "studentId": "student1",
+      "segments": [
+        {
+          "questionNumber": 1,
+          "status": "active",
+          "replaced": false,
+          "transcription": "Total balls = 3 + 5 = 8\nP(red) = 3/8",
+          "problemType": "probability",
+          "steps": [
+            "Total balls = 8",
+            "P(red) = 3/8"
+          ],
+          "variables": {
+            "total": "8",
+            "red": "3"
+          },
+          "studentAnswer": "3/8",
+          "containsDiagram": false,
+          "language": "English",
+          "twoAttempts": false,
+          "structureConfidence": "high"
+        },
+        {
+          "questionNumber": 2,
+          "status": "struck",
+          "replaced": true,
+          "transcription": "Event = a 2digit\n(ii) No. of favourable outcomes = 100-10+1 = 91-1 = 90",
+          "problemType": "probability",
+          "steps": [
+            "No. of favourable outcomes = 100-10+1 = 91-1 = 90"
+          ],
+          "variables": {},
+          "studentAnswer": "",
+          "containsDiagram": false,
+          "language": "English",
+          "twoAttempts": false,
+          "structureConfidence": "medium"
+        },
+        {
+          "questionNumber": 2,
+          "status": "active",
+          "replaced": false,
+          "transcription": "Probability P(E) of event E,\nP(E) = No. of favourable outcomes / No. of all possible outcomes\nNo. of all possible outcomes = 100-5+1 = 96.\n(i) Event = perfect square\nfavourable outcomes = 9, 16, 25, 36, 49, 64, 81, 100\nNo. of favourable outcomes = 8\nP(perfect square) = 8/96 = 1/12\n(ii) Event = a 2digit no.\nNo. of favourable outcomes = 100-10+1-1 = 90\nP(a 2digit no.) = 90/96 = 45/48",
+          "problemType": "probability",
+          "steps": [
+            "P(E) = favourable / all possible",
+            "All possible = 100-5+1 = 96",
+            "(i) perfect squares 9,16,25,36,49,64,81,100 = 8",
+            "P(perfect square) = 8/96 = 1/12",
+            "(ii) 2-digit favourable = 100-10+1-1 = 90",
+            "P(2-digit) = 90/96 = 45/48"
+          ],
+          "variables": {
+            "total": "96",
+            "i_favourable": "8",
+            "ii_favourable": "90"
+          },
+          "studentAnswer": "(i) 1/12 (ii) 45/48",
+          "containsDiagram": false,
+          "language": "English",
+          "twoAttempts": false,
+          "structureConfidence": "high"
+        },
+        {
+          "questionNumber": 3,
+          "status": "active",
+          "replaced": false,
+          "transcription": "Total cards = 52\nRed kings = K of hearts, K of diamonds = 2\nP(red king) = 2/52 = 1/26",
+          "problemType": "probability",
+          "steps": [
+            "Total cards = 52",
+            "Red kings = 2",
+            "P = 2/52 = 1/26"
+          ],
+          "variables": {
+            "total": "52",
+            "favourable": "2"
+          },
+          "studentAnswer": "1/26",
+          "containsDiagram": false,
+          "language": "English",
+          "twoAttempts": false,
+          "structureConfidence": "high"
+        },
+        {
+          "questionNumber": 4,
+          "status": "active",
+          "replaced": false,
+          "transcription": "Total outcomes = 6 x 6 = 36\nPrime sums = 2, 3, 5, 7, 11\nsum 2 = 1, sum 3 = 2, sum 5 = 4, sum 7 = 6, sum 11 = 2\nFavourable = 1+2+4+6+2 = 15\nP = 15/36 = 5/12",
+          "problemType": "probability",
+          "steps": [
+            "Total = 36",
+            "Prime sums = 2, 3, 5, 7, 11",
+            "Favourable = 15",
+            "P = 15/36 = 5/12"
+          ],
+          "variables": {
+            "total": "36",
+            "favourable": "15"
+          },
+          "studentAnswer": "5/12",
+          "containsDiagram": false,
+          "language": "English",
+          "twoAttempts": false,
+          "structureConfidence": "high"
+        },
+        {
+          "questionNumber": 5,
+          "status": "active",
+          "replaced": false,
+          "transcription": "Total discs = 90\n(i) Two-digit = 10 to 90 = 81\nP = 81/90 = 9/10\n(ii) Perfect squares = 1, 4, 9, 16, 25, 36, 49, 64, 81 = 9\nP = 9/90 = 1/10\n(iii) Divisible by 5 = 5, 10, ... 90 = 18\nP = 18/90 = 1/5",
+          "problemType": "probability",
+          "steps": [
+            "Total = 90",
+            "(i) 81/90 = 9/10",
+            "(ii) 9/90 = 1/10",
+            "(iii) 18/90 = 1/5"
+          ],
+          "variables": {
+            "total": "90",
+            "i_favourable": "81",
+            "ii_favourable": "9",
+            "iii_favourable": "18"
+          },
+          "studentAnswer": "(i) 9/10 (ii) 1/10 (iii) 1/5",
+          "containsDiagram": false,
+          "language": "English",
+          "twoAttempts": false,
+          "structureConfidence": "high"
+        }
+      ]
+    },
+    {
+      "studentId": "student2",
+      "segments": [
+        {
+          "questionNumber": 1,
+          "status": "active",
+          "replaced": false,
+          "transcription": "Red = 3, Blue = 5\nP(red) = 3/5",
+          "problemType": "probability",
+          "steps": [
+            "Red = 3, Blue = 5",
+            "P(red) = 3/5"
+          ],
+          "variables": {
+            "red": "3",
+            "blue": "5"
+          },
+          "studentAnswer": "3/5",
+          "containsDiagram": false,
+          "language": "English",
+          "twoAttempts": false,
+          "structureConfidence": "high"
+        },
+        {
+          "questionNumber": 2,
+          "status": "active",
+          "replaced": false,
+          "transcription": "Total outcomes = 100\n(i) Perfect squares = 1, 4, 9, 16, 25, 36, 49, 64, 81, 100 = 10\nP = 10/100 = 1/10\n(ii) 2 digit numbers = 10 to 99 = 90\nP = 90/100 = 9/10",
+          "problemType": "probability",
+          "steps": [
+            "Total = 100",
+            "(i) 10 perfect squares, 10/100 = 1/10",
+            "(ii) 90 two-digit numbers, 90/100 = 9/10"
+          ],
+          "variables": {
+            "total": "100",
+            "i_favourable": "10",
+            "ii_favourable": "90"
+          },
+          "studentAnswer": "(i) 1/10 (ii) 9/10",
+          "containsDiagram": false,
+          "language": "English",
+          "twoAttempts": false,
+          "structureConfidence": "high"
+        },
+        {
+          "questionNumber": 3,
+          "status": "active",
+          "replaced": false,
+          "transcription": "Number of kings = 4\nTotal cards = 52\nP = 4/52 = 1/13",
+          "problemType": "probability",
+          "steps": [
+            "Kings = 4",
+            "Total = 52",
+            "P = 4/52 = 1/13"
+          ],
+          "variables": {
+            "favourable": "4",
+            "total": "52"
+          },
+          "studentAnswer": "1/13",
+          "containsDiagram": false,
+          "language": "English",
+          "twoAttempts": false,
+          "structureConfidence": "high"
+        },
+        {
+          "questionNumber": 4,
+          "status": "active",
+          "replaced": false,
+          "transcription": "Total = 6 x 6 = 36\nPrime = 2, 3, 5, 7, 11\n1 + 2 + 4 + 6 + 2 = 15\nP = 15/36 = 5/6",
+          "problemType": "probability",
+          "steps": [
+            "Total = 36",
+            "Prime sums = 2, 3, 5, 7, 11",
+            "Favourable = 15",
+            "P = 15/36 = 5/6"
+          ],
+          "variables": {
+            "total": "36",
+            "favourable": "15"
+          },
+          "studentAnswer": "5/6",
+          "containsDiagram": false,
+          "language": "English",
+          "twoAttempts": false,
+          "structureConfidence": "high"
+        },
+        {
+          "questionNumber": 5,
+          "status": "active",
+          "replaced": false,
+          "transcription": "Total = 90\n(i) Two digit = 90\nP = 90/90 = 1\n(ii) Perfect squares = 1, 4, 9, 16, 25, 36, 49, 64, 81 = 9\nP = 9/90 = 1/10\n(iii) Divisible by 5 = 18\nP = 18/90 = 1/5",
+          "problemType": "probability",
+          "steps": [
+            "Total = 90",
+            "(i) 90/90 = 1",
+            "(ii) 9/90 = 1/10",
+            "(iii) 18/90 = 1/5"
+          ],
+          "variables": {
+            "total": "90",
+            "i_favourable": "90",
+            "ii_favourable": "9",
+            "iii_favourable": "18"
+          },
+          "studentAnswer": "(i) 1 (ii) 1/10 (iii) 1/5",
+          "containsDiagram": false,
+          "language": "English",
+          "twoAttempts": false,
+          "structureConfidence": "high"
+        }
+      ]
+    },
+    {
+      "studentId": "student3",
+      "segments": [
+        {
+          "questionNumber": 1,
+          "status": "active",
+          "replaced": false,
+          "transcription": "P(red) = 3/8 = 0.375",
+          "problemType": "probability",
+          "steps": [
+            "P(red) = 3/8",
+            "= 0.375"
+          ],
+          "variables": {
+            "red": "3",
+            "total": "8"
+          },
+          "studentAnswer": "0.375",
+          "containsDiagram": false,
+          "language": "none",
+          "twoAttempts": false,
+          "structureConfidence": "high"
+        },
+        {
+          "questionNumber": 2,
+          "status": "struck",
+          "replaced": true,
+          "transcription": "Total outcomes = 100",
+          "problemType": "probability",
+          "steps": [
+            "Total outcomes = 100"
+          ],
+          "variables": {
+            "total": "100"
+          },
+          "studentAnswer": "",
+          "containsDiagram": false,
+          "language": "English",
+          "twoAttempts": false,
+          "structureConfidence": "high"
+        },
+        {
+          "questionNumber": 2,
+          "status": "active",
+          "replaced": false,
+          "transcription": "Total outcomes = 100 - 5 + 1 = 96\n(i) squares = 9, 16, 25, 36, 49, 64, 81, 100 = 8\nP = 8/96 = 1/12\n(ii) 2 digit = 10 to 100 = 91\nP = 91/96",
+          "problemType": "probability",
+          "steps": [
+            "Total = 100 - 5 + 1 = 96",
+            "(i) 8 squares, 8/96 = 1/12",
+            "(ii) 10 to 100 = 91",
+            "P = 91/96"
+          ],
+          "variables": {
+            "total": "96",
+            "i_favourable": "8",
+            "ii_favourable": "91"
+          },
+          "studentAnswer": "(i) 1/12 (ii) 91/96",
+          "containsDiagram": false,
+          "language": "English",
+          "twoAttempts": false,
+          "structureConfidence": "medium"
+        },
+        {
+          "questionNumber": 4,
+          "status": "rough",
+          "replaced": false,
+          "transcription": "sum 2 = 1\nsum 3 = 2\nsum 5 = 4\nsum 7 = 6\nsum 11 = 2",
+          "problemType": "probability",
+          "steps": [],
+          "variables": {},
+          "studentAnswer": "",
+          "containsDiagram": false,
+          "language": "none",
+          "twoAttempts": false,
+          "structureConfidence": "high"
+        },
+        {
+          "questionNumber": 4,
+          "status": "active",
+          "replaced": false,
+          "transcription": "Prime sums are 2 3 5 7 11\nfavourable = 15\nP = 15/36",
+          "problemType": "probability",
+          "steps": [
+            "Prime sums are 2, 3, 5, 7, 11",
+            "Favourable = 15",
+            "P = 15/36"
+          ],
+          "variables": {
+            "favourable": "15",
+            "total": "36"
+          },
+          "studentAnswer": "15/36",
+          "containsDiagram": false,
+          "language": "English",
+          "twoAttempts": false,
+          "structureConfidence": "high"
+        },
+        {
+          "questionNumber": 5,
+          "status": "active",
+          "replaced": false,
+          "transcription": "(i) 10 to 90 = 81, 81/90 = 9/10\n(ii) squares 1 4 9 16 25 36 49 64 81 100\nP = 9/90 and P = 10/90 = 1/9\n(iii) 5 10 [illegible] 90 = 18, 18/90 = 20%",
+          "problemType": "probability",
+          "steps": [
+            "(i) 81/90 = 9/10",
+            "(ii) lists squares up to 100",
+            "(ii) 9/90 and 10/90 = 1/9",
+            "(iii) 18/90 = 20%"
+          ],
+          "variables": {
+            "i_favourable": "81",
+            "iii_favourable": "18"
+          },
+          "studentAnswer": "(i) 9/10 (ii) 1/9 (iii) 20%",
+          "containsDiagram": false,
+          "language": "none",
+          "twoAttempts": true,
+          "structureConfidence": "low"
+        }
+      ]
+    }
+  ]
+}
