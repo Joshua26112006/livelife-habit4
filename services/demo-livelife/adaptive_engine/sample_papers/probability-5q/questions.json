@@ -1,0 +1,32 @@
+[
+  {
+    "questionNumber": 1,
+    "label": null,
+    "marks": 1,
+    "questionText": "A bag contains 3 red balls and 5 blue balls. One ball is drawn at random from the bag. Find the probability that it is red."
+  },
+  {
+    "questionNumber": 2,
+    "label": null,
+    "marks": 2,
+    "questionText": "A bag contains cards which are numbered from 5 to 100 such that each card bears a different number. A card is drawn at random from the bag. Find the probability that the number on the card is (i) a perfect square (ii) a 2-digit number."
+  },
+  {
+    "questionNumber": 3,
+    "label": null,
+    "marks": 2,
+    "questionText": "One card is drawn at random from a well-shuffled deck of 52 playing cards. Find the probability that it is a king of red colour."
+  },
+  {
+    "questionNumber": 4,
+    "label": null,
+    "marks": 3,
+    "questionText": "Two dice are thrown together. Find the probability that the sum of the numbers on the two dice is a prime number."
+  },
+  {
+    "questionNumber": 5,
+    "label": null,
+    "marks": 5,
+    "questionText": "A box contains 90 discs numbered 1 to 90. One disc is drawn at random. Find the probability that it bears (i) a two-digit number (ii) a perfect square number (iii) a number divisible by 5."
+  }
+]
