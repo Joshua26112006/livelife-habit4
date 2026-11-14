@@ -7,8 +7,7 @@ to this service (see `next.config.mjs`), so everything is reachable from one add
 
 ## Folders
 - `demos/choices/` the coach landing page (start here)
-- `demos/livelife-home/` the three-button front page
-- `demos/livelife-student/` and `demos/livelife-teacher/` the assessments' small APIs and their static scorecard pages
+- `demos/livelife-content-generation/` the generated blog, flashcards and think cards
 - `demos/hello/` a minimal example
 
 ## Add your own demo

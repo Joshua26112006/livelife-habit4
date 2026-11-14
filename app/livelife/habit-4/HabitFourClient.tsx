@@ -4,9 +4,8 @@
  * Habit 4: Think Win-Win on its own page (/livelife/habit-4), as a glass interface that never scrolls: a top bar,
  * a collapsible section sidebar, the lesson card with its four phases, and a Learning resources column.
  *
- * No sign-in, no points or rank widget, and nothing here is saved. The three lesson
- * sections call no server; only the fourth, the student assessment (Assessment.tsx), talks to the demo service and
- * the demo's AI scorer. The views live in Views.tsx, the activities in Activities.tsx, the look in glass.css, the content in
+ * No sign-in, no points or rank widget, and nothing here is saved. The lesson sections call no server.
+ * The views live in Views.tsx, the activities in Activities.tsx, the look in glass.css, the content in
  * lib/learnContent/habit4.ts and habit4Activities.ts.
  */
 
@@ -15,7 +14,6 @@ import { motion } from "framer-motion";
 import { H4_CHAPTER } from "@/lib/learnContent/habit4";
 import { LUMEN_LESSONS } from "@/lib/learn/lumenLessons";
 import { EngagementView, UnderstandingView, RetentionView, type Resource } from "./Views";
-import AssessmentView from "./Assessment";
 import "./glass.css";
 
 type PhaseKey = "think_cards" | "understanding" | "retention";
@@ -25,8 +23,6 @@ const PHASES: { key: PhaseKey; emoji: string; name: string; color: string }[] = 
   { key: "retention", emoji: "✨", name: "Retention", color: "#059669" },
 ];
 const COLLAPSE_KEY = "lg-h4-sidebar-collapsed";
-// The fourth section is the student assessment: it has its own steps instead of the three phases.
-const ASSESS = "h4-assessment";
 
 export default function HabitFourClient() {
   const chapter = H4_CHAPTER;
@@ -36,10 +32,6 @@ export default function HabitFourClient() {
   const [collapsed, setCollapsed] = useState(false);
   const [visited, setVisited] = useState<Record<string, PhaseKey[]>>({});
   const [z, setZ] = useState(1);
-  // The assessment is mounted the first time it is opened and then kept (hidden), so a half-finished attempt
-  // survives a look at a lesson and back. It also means the questions are only fetched if someone opens it.
-  const [assessOpened, setAssessOpened] = useState(false);
-
   // The layout is designed for about 1400 x 700. Scale the whole interface to the window, so type, buttons and
   // pictures grow on big screens (and shrink a little on small ones). The glass.css `zoom` reads --z.
   useEffect(() => {
@@ -62,21 +54,18 @@ export default function HabitFourClient() {
 
   // A phase counts as visited once it has been opened (only for the dots in the sidebar; nothing is saved).
   useEffect(() => {
-    if (sectionId === ASSESS) return;
     setVisited((v) => (v[sectionId]?.includes(phase) ? v : { ...v, [sectionId]: [...(v[sectionId] ?? []), phase] }));
   }, [sectionId, phase]);
 
   const section = chapter.sections.find((s) => s.id === sectionId) ?? chapter.sections[0];
-  const isAssess = sectionId === ASSESS;
-  useEffect(() => { if (isAssess) setAssessOpened(true); }, [isAssess]);
-  const total = chapter.sections.length;   // the Student assessment is not counted: it is not a lesson section
+  const total = chapter.sections.length;
   const done = chapter.sections.filter((s) => (visited[s.id]?.length ?? 0) === PHASES.length).length;
   const goPhase = (p: PhaseKey) => setPhase(p);
   // The Video tab is a theatre: the panels step aside so the lesson gets the whole window.
-  const theatre = !isAssess && phase === "understanding" && resource === "video" && !!LUMEN_LESSONS[section.id];
+  const theatre = phase === "understanding" && resource === "video" && !!LUMEN_LESSONS[section.id];
 
   return (
-    <div className="lg-root" data-phase={isAssess ? "assessment" : phase} data-cinema={theatre} style={{ ["--z" as string]: z }}>
+    <div className="lg-root" data-phase={phase} data-cinema={theatre} style={{ ["--z" as string]: z }}>
       <div className="lg-bg" aria-hidden="true" />
       <div className="lg-frame">
         <header className="lg-panel lg-top">
@@ -128,20 +117,12 @@ export default function HabitFourClient() {
                   </span>
                 </button>
               ))}
-              <button type="button" className="lg-sec" aria-current={isAssess} title="Student assessment" onClick={() => setSectionId(ASSESS)}>
-                <span className="lg-sec-ic" aria-hidden="true">📝</span>
-                <span className="lg-sec-t">
-                  <span>Student assessment</span>
-                </span>
-              </button>
             </div>
             <div className="lg-credit">A Live Life Education programme</div>
           </aside>
 
           <main className="lg-panel lg-main">
-            {assessOpened && <div className="lg-as-host" hidden={!isAssess}><AssessmentView /></div>}
-            {!isAssess && (
-              <>
+            <>
                 <div className="lg-phases" role="tablist" aria-label="Phases">
                   {PHASES.map((p) => (
                     <button key={p.key} type="button" role="tab" className="lg-phase" aria-selected={phase === p.key} style={{ ["--ph-c" as string]: p.color }} onClick={() => goPhase(p.key)}>
@@ -153,12 +134,10 @@ export default function HabitFourClient() {
                 {phase === "think_cards" && <EngagementView key={section.id} section={section} onDone={() => { setResource("blog"); goPhase("understanding"); }} />}
                 {phase === "understanding" && <UnderstandingView key={section.id} section={section} resource={resource} onResource={setResource} onDone={() => goPhase("retention")} />}
                 {phase === "retention" && <RetentionView key={section.id} section={section} />}
-              </>
-            )}
+            </>
           </main>
 
-          {isAssess ? null : (
-            <aside className="lg-panel lg-right" aria-label="Learning resources">
+          <aside className="lg-panel lg-right" aria-label="Learning resources">
               <h3><span aria-hidden="true">📚</span> Learning resources</h3>
               <div className="lg-res">
                 <button type="button" aria-pressed={phase === "understanding" && resource === "blog"} onClick={() => { setResource("blog"); goPhase("understanding"); }}>
@@ -170,7 +149,6 @@ export default function HabitFourClient() {
               </div>
               <p className="lg-note">Blog is the lesson with its activities. Video plays the lesson as a short interactive video.</p>
             </aside>
-          )}
         </div>
       </div>
     </div>

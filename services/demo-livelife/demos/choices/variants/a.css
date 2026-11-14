@@ -1,4 +1,4 @@
-/* A: Twin Cards. Two equal glass cards; a 3D object breaks out of each card's top edge. */
+/* A: one glass card; a 3D object breaks out of its top edge. */
 .page { position: relative; z-index: 1; min-height: 100dvh; display: flex; flex-direction: column; max-width: 1120px; margin: 0 auto; padding: 22px 24px 40px; }
 .intro { margin-top: auto !important; }
 .pair { margin-bottom: auto; }
@@ -37,30 +37,17 @@
 
 @media (prefers-reduced-motion: no-preference) {
   .intro, .card { animation: up 700ms var(--ease) both; }
-  .c-self { animation-delay: 120ms; } .c-class { animation-delay: 200ms; }
+  .c-class { animation-delay: 200ms; }
   .art { animation: pop 800ms var(--ease) 300ms both; }
 }
-/* "Assessment outcome": a secondary button under the Self assessment card (opens the latest teacher outcome) */
-.stack { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
-.stack .card { flex: 1; }
-.btn-outcome {
-  display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; text-decoration: none;
-  padding: 14px 22px; border-radius: 16px; font: 800 16px/1 var(--font); color: var(--indigo-deep);
-  background: rgb(255 255 255 / 0.9); border: 2px solid rgb(79 75 232 / 0.55);
-  box-shadow: 0 10px 22px -16px rgb(79 75 232 / 0.6), inset 0 1px 0 #fff;
-  transition: transform 200ms var(--ease), box-shadow 200ms var(--ease), border-color 200ms var(--ease);
-}
-.btn-outcome svg { width: 18px; height: 18px; transition: transform 200ms var(--ease); }
-.btn-outcome:hover { transform: translateY(-2px); border-color: var(--indigo); box-shadow: 0 16px 28px -16px rgb(79 75 232 / 0.7), inset 0 1px 0 #fff; }
-.btn-outcome:hover svg { transform: translateX(3px); }
-.btn-outcome:focus-visible { outline: 3px solid rgb(79 75 232 / 0.55); outline-offset: 3px; }
+.pair.one { grid-template-columns: minmax(0, 520px); justify-content: center; }
 @keyframes up { from { opacity: 0; transform: translateY(16px); } }
 @keyframes pop { from { opacity: 0; transform: translateY(14px) scale(0.85) rotate(-8deg); } }
 
 @media (max-width: 760px) {
   .page { padding: 16px 16px 32px; }
   .top { flex-direction: column; align-items: flex-start; gap: 10px; }
-  .pair { grid-template-columns: 1fr; gap: 64px; padding: 60px 12px 12px; border-radius: 30px; }
+  .pair, .pair.one { grid-template-columns: 1fr; gap: 64px; padding: 60px 12px 12px; border-radius: 30px; }
   .intro { margin: 24px 0 24px; }
   .card { padding-top: 78px; }
   .art { width: 104px; height: 104px; top: -46px; }
